@@ -1,2 +1,2 @@
 # GBEmu
-Game Boy emulator
+Game Boy emulator written in C++
