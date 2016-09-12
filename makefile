@@ -1,2 +1,2 @@
 all:
-	g++ gbemu.cpp -o gbemu
+	g++ -std=c++11 gbemu.cpp -o gbemu
