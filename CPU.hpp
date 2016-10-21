@@ -12,8 +12,8 @@ typedef short SIGNED_WORD;
 union Register{
 	WORD reg;
 	struct {
-		BYTE lo;
 		BYTE hi;
+		BYTE lo;
 	};
 };
 
@@ -32,8 +32,7 @@ class CPU{
 
 		bool LoadCartridge();
 		BYTE Fetch();
-		void Decode();
-		void Execute();
+		void DecodeExecute(BYTE opcode);
 
 	private:
 		Register AF;
@@ -46,6 +45,35 @@ class CPU{
 
 		Flags flags;
 
+		int (CPU::*instructions[300])();
+
 		BYTE Rom[0x10000];
 		BYTE Cartridge[0x200000];
+
+		//Opcode helpers
+		void loadByte(BYTE * dest, BYTE imm);
+		void loadByte(BYTE * dest, BYTE * src);
+
+		WORD readWord(int location);
+
+		//instructions
+
+		//load immediates
+		int LD_B_n();
+		int LD_C_n();
+		int LD_D_n();
+		int LD_E_n();
+		int LD_H_n();
+		int LD_L_n();
+
+		//Load Dec
+		int LDD_HL_A();
+
+		//16 bit loads
+		int LD_SP_nn();
+		int LD_HL_nn();
+
+		//XOR
+		int XOR_A();
+
 };

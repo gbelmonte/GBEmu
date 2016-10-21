@@ -3,7 +3,9 @@
 using namespace std;
 
 int main(int argc, char** argv){
-
+	string input;
+	int batchSize = 10;
+	int stepNumber = 0;
 	CPU cpu;
 	cpu.LoadCartridge();
 
@@ -13,11 +15,17 @@ int main(int argc, char** argv){
 		BYTE opcode = cpu.Fetch();
 		cout << hex << "0x" << (int)opcode << endl;
 
-		//Decode
-
-		//Execute
+		//DecodeExecute
+		cpu.DecodeExecute(opcode);
 
 		//ExecuteInterrupt
+
+		//This is just for debugging opcodes, enter input to execute next batch of instructions
+		stepNumber++;
+		if (stepNumber >= batchSize) {
+			cin >> input;
+			stepNumber = 0;
+		}
 	}
 
 	
