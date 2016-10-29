@@ -1,28 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include "common.hpp"
+#include "memory.hpp"
 
 using namespace std;
-
-typedef unsigned char BYTE;
-typedef char SIGNED_BYTE;
-typedef unsigned short WORD;
-typedef short SIGNED_WORD;
-
-union Register{
-	WORD reg;
-	struct {
-		BYTE hi;
-		BYTE lo;
-	};
-};
-
-struct Flags{
-	unsigned z:1; //Zero Flag
-	unsigned n:1; //Subtract Flag
-	unsigned h:1; //Half Carry Flag
-	unsigned c:1; //Carry Flag
-};
 
 class CPU{
 
@@ -30,7 +12,7 @@ class CPU{
 		CPU();
 		~CPU();
 
-		bool LoadCartridge();
+		void LoadCartridge();
 		BYTE Fetch();
 		void DecodeExecute(BYTE opcode);
 
@@ -45,16 +27,9 @@ class CPU{
 
 		Flags flags;
 
+		Memory memory;
+
 		int (CPU::*instructions[300])();
-
-		BYTE Rom[0x10000];
-		BYTE Cartridge[0x200000];
-
-		//Opcode helpers
-		void loadByte(BYTE * dest, BYTE imm);
-		void loadByte(BYTE * dest, BYTE * src);
-
-		WORD readWord(int location);
 
 		//instructions
 
@@ -75,5 +50,4 @@ class CPU{
 
 		//XOR
 		int XOR_A();
-
 };
