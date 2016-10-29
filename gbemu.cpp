@@ -4,7 +4,7 @@ using namespace std;
 
 int main(int argc, char** argv){
 	string input;
-	int batchSize = 10;
+	int batchSize = 1000;
 	int stepNumber = 0;
 	CPU cpu;
 	cpu.LoadCartridge();

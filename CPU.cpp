@@ -32,6 +32,12 @@ CPU::CPU(){
 
 	//XORs
 	instructions[0xAF] = &CPU::XOR_A;
+
+	//Jumps
+	instructions[0x20] = &CPU::JR_NZ;
+
+	//Bit opcodes
+	instructions_cb[0x7c] = &CPU::BIT_7_H;
 }
 
 CPU::~CPU(){
@@ -51,19 +57,31 @@ BYTE CPU::Fetch(){
 }
 
 void CPU::DecodeExecute(BYTE opcode){
-	if (instructions[opcode] != NULL){
-		(this->*instructions[opcode])();
+
+	if (opcode == 0xcb){
+		opcode = Fetch();
+		if (instructions_cb[opcode] != NULL) {
+			(this->*instructions_cb[opcode])();
+		}
+		else {
+			cout << hex << "Opcode: cb " << (int)opcode << " is not implemented yet.";
+		}
 	}
-	else{
-		cout << hex << "Opcode: " << (int)opcode << " is not implemented yet.";
+	else {
+		if (instructions[opcode] != NULL){
+			(this->*instructions[opcode])();
+		}
+		else {
+			cout << hex << "Opcode: " << (int)opcode << " is not implemented yet.";
+		}
 	}
 }
 
 //instructions
-
 int CPU::LD_B_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
+	cout << hex << "LD B, " << "0x" << (int)immediate << endl;
 	this->BC.hi = immediate;
 	cout << hex << "LD B, " << (int)this->BC.hi << endl;
 } 
@@ -89,8 +107,9 @@ int CPU::LD_L_n(){
 }
 
 int CPU::LDD_HL_A(){
-	//TODO: implement instruction
-	cout << hex << "LDD HL, A" << endl;
+	this->memory.writeByte(this->HL.reg, this->AF.hi);
+	this->HL.reg--;
+	cout << hex << "LDD HL, A              " << (int)this->HL.reg << endl;
 }
 
 int CPU::LD_SP_nn(){
@@ -105,8 +124,42 @@ int CPU::LD_HL_nn(){
 	cout << hex << "LD HL, " << "0x" << (int)this->HL.reg << endl;
 }
 
+//Jump Instructions
+int CPU::JR_NZ() {
+	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	cout << hex << "JR NZ, " << (int)offset << endl;
+	if (this->flags.z == 0) {
+		this->PC.reg += offset;
+		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	}
+}
+
+
 //Math instructions
 int CPU::XOR_A(){
 	this->AF.hi = 0x00;
 	cout << hex << "XOR A" << endl;
+}
+
+
+//Bit instructions
+void CPU::TestBit(BYTE byte, BYTE mask) {
+	byte = byte & mask;
+	cout << hex << (int)byte << endl;
+	if (byte != 0) {
+		this->flags.z = 0;
+	}
+	else {
+		this->flags.z = 1;
+	}
+
+	this->flags.n = 0;
+	this->flags.h = 1;
+}
+
+
+int CPU::BIT_7_H() {
+	TestBit(this->HL.hi, BIT7);
+	cout << hex << "BIT 7, H" << endl;
 }

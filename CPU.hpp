@@ -30,6 +30,7 @@ class CPU{
 		Memory memory;
 
 		int (CPU::*instructions[300])();
+		int (CPU::*instructions_cb[300])();
 
 		//instructions
 
@@ -50,4 +51,12 @@ class CPU{
 
 		//XOR
 		int XOR_A();
+
+		//Jumps
+		int JR_NZ();
+
+		//Bit
+		void TestBit(BYTE byte, BYTE mask);
+
+		int BIT_7_H();
 };
