@@ -146,27 +146,41 @@ int CPU::LD_B_n(){
 	this->PC.reg++;
 	cout << hex << "LD B, " << "0x" << (int)immediate << endl;
 	this->BC.hi = immediate;
-	cout << hex << "LD B, " << (int)this->BC.hi << endl;
 } 
 
 int CPU::LD_C_n(){
-	cout << "load c";
+	BYTE immediate = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	cout << hex << "LD C, " << "0x" << (int)immediate << endl;
+	this->BC.lo = immediate;
 }
 
 int CPU::LD_D_n(){
-	cout << "LD B ";
+	BYTE immediate = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	cout << hex << "LD D, " << "0x" << (int)immediate << endl;
+	this->DE.hi = immediate;
 } 
 
 int CPU::LD_E_n(){
-	cout << "load c";
+	BYTE immediate = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	cout << hex << "LD E, " << "0x" << (int)immediate << endl;
+	this->DE.lo = immediate;
 }
 
 int CPU::LD_H_n(){
-	cout << "LD B ";
+	BYTE immediate = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	cout << hex << "LD H, " << "0x" << (int)immediate << endl;
+	this->HL.hi = immediate;
 } 
 
 int CPU::LD_L_n(){
-	cout << "load c";
+	BYTE immediate = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	cout << hex << "LD L, " << "0x" << (int)immediate << endl;
+	this->HL.lo = immediate;
 }
 
 int CPU::LDD_HL_A(){
