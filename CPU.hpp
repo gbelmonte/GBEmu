@@ -55,8 +55,79 @@ class CPU{
 		//Jumps
 		int JR_NZ();
 
+
 		//Bit
 		void TestBit(BYTE byte, BYTE mask);
 
+		int BIT_0_A();
+		int BIT_1_A();
+		int BIT_2_A();
+		int BIT_3_A();
+		int BIT_4_A();
+		int BIT_5_A();
+		int BIT_6_A();
+		int BIT_7_A();
+
+		int BIT_0_B();
+		int BIT_1_B();
+		int BIT_2_B();
+		int BIT_3_B();
+		int BIT_4_B();
+		int BIT_5_B();
+		int BIT_6_B();
+		int BIT_7_B();
+
+		int BIT_0_C();
+		int BIT_1_C();
+		int BIT_2_C();
+		int BIT_3_C();
+		int BIT_4_C();
+		int BIT_5_C();
+		int BIT_6_C();
+		int BIT_7_C();
+
+		int BIT_0_D();
+		int BIT_1_D();
+		int BIT_2_D();
+		int BIT_3_D();
+		int BIT_4_D();
+		int BIT_5_D();
+		int BIT_6_D();
+		int BIT_7_D();
+
+		int BIT_0_E();
+		int BIT_1_E();
+		int BIT_2_E();
+		int BIT_3_E();
+		int BIT_4_E();
+		int BIT_5_E();
+		int BIT_6_E();
+		int BIT_7_E();
+
+		int BIT_0_H();
+		int BIT_1_H();
+		int BIT_2_H();
+		int BIT_3_H();
+		int BIT_4_H();
+		int BIT_5_H();
+		int BIT_6_H();
 		int BIT_7_H();
+
+		int BIT_0_L();
+		int BIT_1_L();
+		int BIT_2_L();
+		int BIT_3_L();
+		int BIT_4_L();
+		int BIT_5_L();
+		int BIT_6_L();
+		int BIT_7_L();
+
+		int BIT_0_HL();
+		int BIT_1_HL();
+		int BIT_2_HL();
+		int BIT_3_HL();
+		int BIT_4_HL();
+		int BIT_5_HL();
+		int BIT_6_HL();
+		int BIT_7_HL();
 };
