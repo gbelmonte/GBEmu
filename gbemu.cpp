@@ -13,7 +13,7 @@ int main(int argc, char** argv){
 
 		//Fetch
 		BYTE opcode = cpu.Fetch();
-		cout << hex << "0x" << (int)opcode << endl;
+		cout << hex << "0x" << (int)opcode << ": ";
 
 		//DecodeExecute
 		cpu.DecodeExecute(opcode);
@@ -21,11 +21,11 @@ int main(int argc, char** argv){
 		//ExecuteInterrupt
 
 		//This is just for debugging opcodes, enter input to execute next batch of instructions
-		stepNumber++;
-		if (stepNumber >= batchSize) {
-			cin >> input;
-			stepNumber = 0;
-		}
+		// stepNumber++;
+		// if (stepNumber >= batchSize) {
+		// 	cin >> input;
+		// 	stepNumber = 0;
+		// }
 	}
 
 	

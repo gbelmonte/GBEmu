@@ -35,6 +35,7 @@ class CPU{
 		//instructions
 
 		//load immediates
+		int LD_A_n();
 		int LD_B_n();
 		int LD_C_n();
 		int LD_D_n();
@@ -42,12 +43,30 @@ class CPU{
 		int LD_H_n();
 		int LD_L_n();
 
+		int LD_A_A();
+		int LD_A_B();
+		int LD_A_C();
+		int LD_A_D();
+		int LD_A_E();
+		int LD_A_H();
+		int LD_A_L();
+		int LD_A_BC();
+		int LD_A_DE();
+		int LD_A_HL();
+		int LD_A_nn();
+
+		int LD_HL_A();
+		int LD_C_A();
+		int LD_FF00_n_A();
+
 		//Load Dec
 		int LDD_HL_A();
 
 		//16 bit loads
-		int LD_SP_nn();
+		int LD_BC_nn();
+		int LD_DE_nn();
 		int LD_HL_nn();
+		int LD_SP_nn();
 
 		//XOR
 		int XOR_A();
@@ -55,6 +74,16 @@ class CPU{
 		//Jumps
 		int JR_NZ();
 
+		//Increments
+		BYTE RegInc(BYTE value);
+		int INC_A();
+		int INC_B();
+		int INC_C();
+		int INC_D();
+		int INC_E();
+		int INC_H();
+		int INC_L();
+		int INC_HL();
 
 		//Bit
 		void TestBit(BYTE byte, BYTE mask);

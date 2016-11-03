@@ -16,6 +16,7 @@ CPU::CPU(){
 		instructions[i] = NULL;
 	}
 
+	instructions[0x3e] = &CPU::LD_A_n;
 	instructions[0x06] = &CPU::LD_B_n;
 	instructions[0x0E] = &CPU::LD_C_n;
 	instructions[0x16] = &CPU::LD_D_n;
@@ -23,15 +24,43 @@ CPU::CPU(){
 	instructions[0x26] = &CPU::LD_H_n;
 	instructions[0x2E] = &CPU::LD_L_n;
 
+	instructions[0x7F] = &CPU::LD_A_A;
+	instructions[0x78] = &CPU::LD_A_B;
+	instructions[0x79] = &CPU::LD_A_C;
+	instructions[0x7A] = &CPU::LD_A_D;
+	instructions[0x7B] = &CPU::LD_A_E;
+	instructions[0x7C] = &CPU::LD_A_H;
+	instructions[0x7D] = &CPU::LD_A_L;
+	instructions[0x0A] = &CPU::LD_A_BC;
+	instructions[0x1A] = &CPU::LD_A_DE;
+	instructions[0x7E] = &CPU::LD_A_HL;
+	instructions[0xFA] = &CPU::LD_A_nn;
+
+	instructions[0x77] = &CPU::LD_HL_A;
+	instructions[0xe2] = &CPU::LD_C_A;
+	instructions[0xe0] = &CPU::LD_FF00_n_A;
+
 	//Load Dec
 	instructions[0x32] = &CPU::LDD_HL_A;
 
 	//16 bit load immediate
-	instructions[0x31] = &CPU::LD_SP_nn;
+	instructions[0x01] = &CPU::LD_BC_nn;
+	instructions[0x11] = &CPU::LD_DE_nn;
 	instructions[0x21] = &CPU::LD_HL_nn;
+	instructions[0x31] = &CPU::LD_SP_nn;
 
 	//XORs
 	instructions[0xAF] = &CPU::XOR_A;
+
+	//Incs
+	instructions[0x3C] = &CPU::INC_A;
+	instructions[0x04] = &CPU::INC_B;
+	instructions[0x0C] = &CPU::INC_C;
+	instructions[0x14] = &CPU::INC_D;
+	instructions[0x1C] = &CPU::INC_E;
+	instructions[0x24] = &CPU::INC_H;
+	instructions[0x2C] = &CPU::INC_L;
+	instructions[0x34] = &CPU::INC_HL;
 
 	//Jumps
 	instructions[0x20] = &CPU::JR_NZ;
@@ -120,14 +149,15 @@ BYTE CPU::Fetch(){
 }
 
 void CPU::DecodeExecute(BYTE opcode){
-
+	string input;
 	if (opcode == 0xcb){
 		opcode = Fetch();
 		if (instructions_cb[opcode] != NULL) {
 			(this->*instructions_cb[opcode])();
 		}
 		else {
-			cout << hex << "Opcode: cb " << (int)opcode << " is not implemented yet.";
+			cout << hex << "CB Opcode: cb " << (int)opcode << " is not implemented yet.";
+			cin >> input;
 		}
 	}
 	else {
@@ -136,11 +166,19 @@ void CPU::DecodeExecute(BYTE opcode){
 		}
 		else {
 			cout << hex << "Opcode: " << (int)opcode << " is not implemented yet.";
+			cin >> input;
 		}
 	}
 }
 
 //instructions
+int CPU::LD_A_n(){
+	BYTE immediate = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	cout << hex << "LD A, " << "0x" << (int)immediate << endl;
+	this->AF.hi = immediate;
+}
+
 int CPU::LD_B_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
@@ -183,22 +221,110 @@ int CPU::LD_L_n(){
 	this->HL.lo = immediate;
 }
 
+int CPU::LD_A_A() {
+	cout << hex << "LD A, A" << endl;
+}
+
+int CPU::LD_A_B() {
+	this->AF.hi = this->BC.hi;
+	cout << hex << "LD A, B" << endl;
+}
+
+int CPU::LD_A_C() {
+	this->AF.hi = this->BC.lo;
+	cout << hex << "LD A, C" << endl;
+}
+
+int CPU::LD_A_D() {
+	this->AF.hi = this->DE.hi;
+	cout << hex << "LD A, D" << endl;
+}
+
+int CPU::LD_A_E() {
+	this->AF.hi = this->DE.lo;
+	cout << hex << "LD A, E" << endl;
+}
+
+int CPU::LD_A_H() {
+	this->AF.hi = this->HL.hi;
+	cout << hex << "LD A, H" << endl;
+}
+
+int CPU::LD_A_L() {
+	this->AF.hi = this->HL.lo;
+	cout << hex << "LD A, L" << endl;
+}
+
+int CPU::LD_A_BC() {
+	this->AF.hi = this->memory.readByte(this->BC.reg);
+	cout << hex << "LD A, (BC)" << endl;
+}
+
+int CPU::LD_A_DE() {
+	this->AF.hi = this->memory.readByte(this->DE.reg);
+	cout << hex << "LD A, (DE)" << endl;
+}
+
+int CPU::LD_A_HL() {
+	this->AF.hi = this->memory.readByte(this->HL.reg);
+	cout << hex << "LD A, (HL)" << endl;
+}
+
+int CPU::LD_A_nn() {
+	WORD address = this->memory.readWord(this->PC.reg);
+	this->PC.reg += 2;
+	this->AF.hi = this->memory.readByte(address);
+	cout << hex << "LD A, (0x" << (int)address << ")" << endl;
+}
+
+
+int CPU::LD_HL_A() {
+	this->memory.writeByte(this->HL.reg, this->AF.hi);
+	cout << hex << "LD (HL), A" << endl;
+}
+
+int CPU::LD_C_A(){
+	WORD address = 0xFF00 + this->BC.lo;
+	this->memory.writeByte(address, this->AF.hi);
+	cout << hex << "LD ($FF00 + C), A" << endl;
+}
+
+int CPU::LD_FF00_n_A(){
+	BYTE immediate = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	WORD address = 0xFF00 + immediate;
+	this->memory.writeByte(address, this->AF.hi);
+	cout << hex << "LD ($FF00 + 0x" << (int)immediate << "), A" << endl;
+}
+
 int CPU::LDD_HL_A(){
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
 	this->HL.reg--;
-	cout << hex << "LDD HL, A              " << (int)this->HL.reg << endl;
+	cout << hex << "LDD (HL), A" << endl;
 }
 
-int CPU::LD_SP_nn(){
-	this->SP.reg = this->memory.readWord(this->PC.reg);
+int CPU::LD_BC_nn(){
+	this->BC.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
-	cout << hex << "LD SP, " << "0x" << (int)this->SP.reg << endl;
+	cout << hex << "LD BC, " << "0x" << (int)this->BC.reg << endl;
+}
+
+int CPU::LD_DE_nn(){
+	this->DE.reg = this->memory.readWord(this->PC.reg);
+	this->PC.reg += 2;
+	cout << hex << "LD DE, " << "0x" << (int)this->DE.reg << endl;
 }
 
 int CPU::LD_HL_nn(){
 	this->HL.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
 	cout << hex << "LD HL, " << "0x" << (int)this->HL.reg << endl;
+}
+
+int CPU::LD_SP_nn(){
+	this->SP.reg = this->memory.readWord(this->PC.reg);
+	this->PC.reg += 2;
+	cout << hex << "LD SP, " << "0x" << (int)this->SP.reg << endl;
 }
 
 //Jump Instructions
@@ -217,6 +343,63 @@ int CPU::JR_NZ() {
 int CPU::XOR_A(){
 	this->AF.hi = 0x00;
 	cout << hex << "XOR A" << endl;
+}
+
+
+BYTE CPU::RegInc(BYTE value) {
+	BYTE bit3Before = value & BIT3;
+	value++;
+	BYTE bit3After = value & BIT3;
+
+	if (value == 0) {
+		this->flags.z = 1;
+	}
+	this->flags.n = 0;
+	if (bit3Before > 0 && bit3After == 0){
+		this->flags.h = 1;
+	}
+}
+
+int CPU::INC_A() {
+	this->AF.hi = RegInc(this->AF.hi);
+	cout << hex << "INC A" << endl;
+}
+
+int CPU::INC_B() {
+	this->BC.hi = RegInc(this->BC.hi);
+	cout << hex << "INC B" << endl;
+}
+
+int CPU::INC_C() {
+	this->BC.lo = RegInc(this->BC.lo);
+	cout << hex << "INC C" << endl;
+}
+
+int CPU::INC_D() {
+	this->DE.hi = RegInc(this->DE.hi);
+	cout << hex << "INC D" << endl;
+}
+
+int CPU::INC_E() {
+	this->DE.lo = RegInc(this->DE.lo);
+	cout << hex << "INC E" << endl;
+}
+
+int CPU::INC_H() {
+	this->HL.hi = RegInc(this->HL.hi);
+	cout << hex << "INC H" << endl;
+}
+
+int CPU::INC_L() {
+	this->HL.lo = RegInc(this->HL.lo);
+	cout << hex << "INC L" << endl;
+}
+
+int CPU::INC_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = RegInc(value);
+	this->memory.writeByte(this->HL.reg, value);
+	cout << hex << "INC (HL)" << endl;
 }
 
 
