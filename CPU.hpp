@@ -55,8 +55,18 @@ class CPU{
 		int LD_A_HL();
 		int LD_A_nn();
 
-		int LD_HL_A();
+		int LD_B_A();
 		int LD_C_A();
+		int LD_D_A();
+		int LD_E_A();
+		int LD_H_A();
+		int LD_L_A();
+		int LD_BC_A();
+		int LD_DE_A();
+		int LD_nn_A();
+
+		int LD_HL_A();
+		int LD_FF00_C_A();
 		int LD_FF00_n_A();
 
 		//Load Dec
@@ -73,6 +83,22 @@ class CPU{
 
 		//Jumps
 		int JR_NZ();
+
+		//Stack instructions
+		void PushWord(WORD value);
+		WORD PopWord();
+		void PushByte(BYTE value);
+		BYTE PopByte();
+
+		int CALL_nn();
+		int PUSH_AF();
+		int PUSH_BC();
+		int PUSH_DE();
+		int PUSH_HL();
+		int POP_AF();
+		int POP_BC();
+		int POP_DE();
+		int POP_HL();
 
 		//Increments
 		BYTE RegInc(BYTE value);

@@ -36,8 +36,18 @@ CPU::CPU(){
 	instructions[0x7E] = &CPU::LD_A_HL;
 	instructions[0xFA] = &CPU::LD_A_nn;
 
+	instructions[0x47] = &CPU::LD_B_A;
+	instructions[0x4F] = &CPU::LD_C_A;
+	instructions[0x57] = &CPU::LD_D_A;
+	instructions[0x5F] = &CPU::LD_E_A;
+	instructions[0x67] = &CPU::LD_H_A;
+	instructions[0x6F] = &CPU::LD_L_A;
+	instructions[0x02] = &CPU::LD_BC_A;
+	instructions[0x12] = &CPU::LD_DE_A;
+	instructions[0xEA] = &CPU::LD_nn_A;
+
 	instructions[0x77] = &CPU::LD_HL_A;
-	instructions[0xe2] = &CPU::LD_C_A;
+	instructions[0xe2] = &CPU::LD_FF00_C_A;
 	instructions[0xe0] = &CPU::LD_FF00_n_A;
 
 	//Load Dec
@@ -64,6 +74,17 @@ CPU::CPU(){
 
 	//Jumps
 	instructions[0x20] = &CPU::JR_NZ;
+
+	instructions[0xCD] = &CPU::CALL_nn;
+	instructions[0xF5] = &CPU::PUSH_AF;
+	instructions[0xC5] = &CPU::PUSH_BC;
+	instructions[0xD5] = &CPU::PUSH_DE;
+	instructions[0xE5] = &CPU::PUSH_HL;
+
+	instructions[0xF1] = &CPU::POP_AF;
+	instructions[0xC1] = &CPU::POP_BC;
+	instructions[0xD1] = &CPU::POP_DE;
+	instructions[0xE1] = &CPU::POP_HL;
 
 	//Bit opcodes
 	instructions_cb[0x47] = &CPU::BIT_0_A;
@@ -277,13 +298,59 @@ int CPU::LD_A_nn() {
 	cout << hex << "LD A, (0x" << (int)address << ")" << endl;
 }
 
+int CPU::LD_B_A() {
+	this->BC.hi = this->AF.hi;
+	cout << hex << "LD B, A" << endl;
+}
+
+int CPU::LD_C_A() {
+	this->BC.lo = this->AF.hi;
+	cout << hex << "LD C, A" << endl;
+}
+
+int CPU::LD_D_A() {
+	this->DE.hi = this->AF.hi;
+	cout << hex << "LD D, A" << endl;
+}
+
+int CPU::LD_E_A() {
+	this->DE.lo = this->AF.hi;
+	cout << hex << "LD E, A" << endl;
+}
+
+int CPU::LD_H_A() {
+	this->HL.hi = this->AF.hi;
+	cout << hex << "LD H, A" << endl;
+}
+
+int CPU::LD_L_A() {
+	this->HL.lo = this->AF.hi;
+	cout << hex << "LD L, A" << endl;
+}
+
+int CPU::LD_BC_A() {
+	this->memory.writeByte(this->BC.reg, this->AF.hi);
+	cout << hex << "LD (BC), A" << endl;
+}
+
+int CPU::LD_DE_A() {
+	this->memory.writeByte(this->DE.reg, this->AF.hi);
+	cout << hex << "LD (DE), A" << endl;
+}
+
+int CPU::LD_nn_A() {
+	WORD immediate = this->memory.readWord(this->PC.reg);
+	this->PC.reg+=2;
+	this->memory.writeByte(immediate, this->AF.hi);
+	cout << hex << "LD (0x" << (int)immediate << "), A" << endl;
+}
 
 int CPU::LD_HL_A() {
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
 	cout << hex << "LD (HL), A" << endl;
 }
 
-int CPU::LD_C_A(){
+int CPU::LD_FF00_C_A(){
 	WORD address = 0xFF00 + this->BC.lo;
 	this->memory.writeByte(address, this->AF.hi);
 	cout << hex << "LD ($FF00 + C), A" << endl;
@@ -337,6 +404,81 @@ int CPU::JR_NZ() {
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
 }
+
+void CPU::PushWord(WORD value) {
+	BYTE lo = value & 0x00FF;
+	BYTE hi = value >> 8;
+	PushByte(lo);
+	PushByte(hi);
+}
+
+WORD CPU::PopWord() {
+	WORD retVal = PopByte();
+	retVal << 8;
+	retVal = retVal | PopByte();
+
+	return retVal;
+}
+
+void CPU::PushByte(BYTE value) {
+	this->SP.reg--;
+	this->memory.writeByte(this->SP.reg, value);
+}
+
+BYTE CPU::PopByte() {
+	BYTE retVal = this->memory.readByte(this->SP.reg);
+	this->SP.reg++;
+
+	return retVal;
+}
+
+int CPU::CALL_nn() {
+	WORD immediate = this->memory.readWord(this->PC.reg);
+	PushWord(this->PC.reg);
+	this->PC.reg = immediate;
+	cout << hex << "CALL 0x" << (int)immediate << endl;
+}
+
+int CPU::PUSH_AF() {
+	PushWord(this->AF.reg);
+	cout << hex << "PUSH AF" << endl;
+}
+
+int CPU::PUSH_BC() {
+	PushWord(this->BC.reg);
+	cout << hex << "PUSH BC" << endl;
+}
+
+int CPU::PUSH_DE() {
+	PushWord(this->DE.reg);
+	cout << hex << "PUSH DE" << endl;
+}
+
+int CPU::PUSH_HL() {
+	PushWord(this->HL.reg);
+	cout << hex << "PUSH HL" << endl;
+}
+
+int CPU::POP_AF() {
+	this->AF.reg = PopWord();
+	cout << hex << "POP AF" << endl;
+}
+
+int CPU::POP_BC() {
+	this->BC.reg = PopWord();
+	cout << hex << "POP BC" << endl;
+}
+
+int CPU::POP_DE() {
+	this->DE.reg = PopWord();
+	cout << hex << "POP DE" << endl;
+}
+
+int CPU::POP_HL() {
+	this->HL.reg = PopWord();
+	cout << hex << "POP HL" << endl;
+}
+
 
 
 //Math instructions
