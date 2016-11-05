@@ -30,4 +30,9 @@ const BYTE BIT2 = 0x04;
 const BYTE BIT1 = 0x02;
 const BYTE BIT0 = 0x01;
 
+enum Direction {
+	right,
+	left
+};
+
 #endif

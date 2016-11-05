@@ -33,6 +33,7 @@ class CPU{
 		int (CPU::*instructions_cb[300])();
 
 		//instructions
+		int NOP() {};
 
 		//load immediates
 		int LD_A_n();
@@ -68,9 +69,11 @@ class CPU{
 		int LD_HL_A();
 		int LD_FF00_C_A();
 		int LD_FF00_n_A();
+		int LDH_A_FF00_n();
 
 		//Load Dec
 		int LDD_HL_A();
+		int LDI_HL_A();
 
 		//16 bit loads
 		int LD_BC_nn();
@@ -81,8 +84,23 @@ class CPU{
 		//XOR
 		int XOR_A();
 
+		//CP
+		void Compare(BYTE value);
+		int CP_A();
+		int CP_B();
+		int CP_C();
+		int CP_D();
+		int CP_E();
+		int CP_H();
+		int CP_L();
+		int CP_MEM_HL();
+		int CP_n();
+
 		//Jumps
 		int JR_NZ();
+		int JR_Z();
+		int JR_NC();
+		int JR_C();
 
 		//Stack instructions
 		void PushWord(WORD value);
@@ -91,6 +109,7 @@ class CPU{
 		BYTE PopByte();
 
 		int CALL_nn();
+		int RET();
 		int PUSH_AF();
 		int PUSH_BC();
 		int PUSH_DE();
@@ -109,7 +128,27 @@ class CPU{
 		int INC_E();
 		int INC_H();
 		int INC_L();
+		int INC_MEM_HL();
+
+		int INC_BC();
+		int INC_DE();
 		int INC_HL();
+		int INC_SP();
+
+		BYTE RegDec(BYTE value);
+		int DEC_A();
+		int DEC_B();
+		int DEC_C();
+		int DEC_D();
+		int DEC_E();
+		int DEC_H();
+		int DEC_L();
+		int DEC_MEM_HL();
+
+		int DEC_BC();
+		int DEC_DE();
+		int DEC_HL();
+		int DEC_SP();
 
 		//Bit
 		void TestBit(BYTE byte, BYTE mask);
@@ -185,4 +224,17 @@ class CPU{
 		int BIT_5_HL();
 		int BIT_6_HL();
 		int BIT_7_HL();
+
+		//Rotates
+		BYTE Rotate(BYTE value, Direction direction);
+
+		int RLA();
+		int RL_A();
+		int RL_B();
+		int RL_C();
+		int RL_D();
+		int RL_E();
+		int RL_H();
+		int RL_L();
+		int RL_HL();
 };

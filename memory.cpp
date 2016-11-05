@@ -67,7 +67,7 @@ void Memory::writeByte(WORD address, BYTE value) {
 		this->Rom[romAddress] = value;
 		this->Rom[romAddress - 0x2000] = value;
 	}
-	else if (address >= 0xFE00) {
+	else if ((address >= 0xFEA0)  && (address < 0xFEFF)){
 		//Attempting to write to unwriteable memory
 	}
 	else {
