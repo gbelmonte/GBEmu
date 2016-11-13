@@ -89,6 +89,10 @@ class CPU{
 		int LD_HL_nn();
 		int LD_SP_nn();
 
+		//ADD
+		BYTE Add(BYTE operand1, BYTE operand2);
+		int ADD_HL();
+
 		//SUB
 		BYTE Subtract(BYTE from, BYTE sub);
 		int SUB_B();

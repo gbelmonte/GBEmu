@@ -65,6 +65,9 @@ CPU::CPU(){
 	instructions[0x21] = &CPU::LD_HL_nn;
 	instructions[0x31] = &CPU::LD_SP_nn;
 
+	//Add
+	instructions[0x86] = &CPU::ADD_HL;
+
 	//Sub
 	instructions[0x90] = &CPU::SUB_B;
 
@@ -220,7 +223,7 @@ void CPU::LoadCartridge(){
 
 BYTE CPU::Fetch(){
 	BYTE opcode = this->memory.readByte(this->PC.reg);
-	//cout << hex << "0x" << (int)this->PC.reg << ": SP:" << (int)this->SP.reg <<endl;
+	//cout << hex << "0x" << (int)this->PC.reg << endl;
 	this->PC.reg = this->PC.reg + 1;
 	return opcode;
 }
@@ -727,7 +730,41 @@ int CPU::POP_HL() {
 	return 4;
 }
 
+BYTE CPU::Add(BYTE operand1, BYTE operand2) {
+	bool setHalfCarry = ((operand1 & 0x0F) + (operand2 & 0x0F) > 0x0F);
+	BYTE sum = operand1 + operand2;
 
+	if (sum == 0) {
+		this->flags.z = 1;
+	}
+	else {
+		this->flags.z = 0;
+	}
+
+	this->flags.n = 0;
+
+	if (setHalfCarry) {
+		this->flags.h = 1;
+	}
+	else {
+		this->flags.h = 0;
+	}
+
+	if (sum < operand1) {
+		this->flags.c = 1;
+	}
+	else {
+		this->flags.c = 0;
+	}
+	
+	return sum;
+}
+
+int CPU::ADD_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	this->AF.hi = Add(this->AF.hi, value);
+	return 8;
+}
 
 //Math instructions
 BYTE CPU::Subtract(BYTE from, BYTE sub) {
@@ -755,7 +792,7 @@ BYTE CPU::Subtract(BYTE from, BYTE sub) {
 }
 
 int CPU::SUB_B() {
-	this->AF.hi = this->AF.hi - this->BC.hi;
+	this->AF.hi = Subtract(this->AF.hi, this->BC.hi);
 	//cout << "B: " << (int)this->BC.hi << endl;
 	return 4;
 }
@@ -859,6 +896,9 @@ BYTE CPU::RegInc(BYTE value) {
 	this->flags.n = 0;
 	if (setHalfCarry){
 		this->flags.h = 1;
+	}
+	else {
+		this->flags.h = 0;
 	}
 
 	return value;
