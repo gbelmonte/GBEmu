@@ -3,6 +3,7 @@
 #include <iostream>
 #include "common.hpp"
 #include "memory.hpp"
+#include "gpu.hpp"
 
 using namespace std;
 
@@ -14,7 +15,9 @@ class CPU{
 
 		void LoadCartridge();
 		BYTE Fetch();
-		void DecodeExecute(BYTE opcode);
+		int DecodeExecute(BYTE opcode);
+		void UpdateScreen(int cycles);
+		bool CheckInput();
 
 	private:
 		Register AF;
@@ -28,9 +31,14 @@ class CPU{
 		Flags flags;
 
 		Memory memory;
+		GPU gpu;
+		BYTE cycleCounter;
+
 
 		int (CPU::*instructions[300])();
 		int (CPU::*instructions_cb[300])();
+
+		void DrawLine();
 
 		//instructions
 		int NOP() {};
@@ -81,6 +89,10 @@ class CPU{
 		int LD_HL_nn();
 		int LD_SP_nn();
 
+		//SUB
+		BYTE Subtract(BYTE from, BYTE sub);
+		int SUB_B();
+
 		//XOR
 		int XOR_A();
 
@@ -101,6 +113,7 @@ class CPU{
 		int JR_Z();
 		int JR_NC();
 		int JR_C();
+		int JR();
 
 		//Stack instructions
 		void PushWord(WORD value);
@@ -151,6 +164,7 @@ class CPU{
 		int DEC_SP();
 
 		//Bit
+		BYTE GetBit(BYTE value, int bitPos);
 		void TestBit(BYTE byte, BYTE mask);
 
 		int BIT_0_A();

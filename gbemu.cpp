@@ -3,31 +3,22 @@
 using namespace std;
 
 int main(int argc, char** argv){
-	string input;
-	int batchSize = 1000;
-	int stepNumber = 0;
 	CPU cpu;
 	cpu.LoadCartridge();
 
-	while(1){
+	bool quit = false;
+	while(!quit){
 
 		//Fetch
 		BYTE opcode = cpu.Fetch();
-		cout << hex << "0x" << (int)opcode << ": ";
+		//cout << hex << "0x" << (int)opcode << ": " << endl;
 
 		//DecodeExecute
-		cpu.DecodeExecute(opcode);
+		int cycles = cpu.DecodeExecute(opcode);
 
-		//ExecuteInterrupt
-
-		//This is just for debugging opcodes, enter input to execute next batch of instructions
-		// stepNumber++;
-		// if (stepNumber >= batchSize) {
-		// 	cin >> input;
-		// 	stepNumber = 0;
-		// }
+		cpu.UpdateScreen(cycles);
+		quit = cpu.CheckInput();
 	}
 
-	
 	return 0;
 }

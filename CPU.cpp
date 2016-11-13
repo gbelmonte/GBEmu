@@ -11,6 +11,8 @@ CPU::CPU(){
 	this->DE.reg = 0x00D8;
 	this->HL.reg = 0x014D;
 
+	this->cycleCounter = 456;
+
 	//Init instructions
 	for (int i = 0; i < (sizeof((instructions))/sizeof((instructions[0]))); i++ ){
 		instructions[i] = NULL;
@@ -63,6 +65,9 @@ CPU::CPU(){
 	instructions[0x21] = &CPU::LD_HL_nn;
 	instructions[0x31] = &CPU::LD_SP_nn;
 
+	//Sub
+	instructions[0x90] = &CPU::SUB_B;
+
 	//XORs
 	instructions[0xAF] = &CPU::XOR_A;
 
@@ -112,6 +117,7 @@ CPU::CPU(){
 	instructions[0x28] = &CPU::JR_Z;
 	instructions[0x30] = &CPU::JR_NC;
 	instructions[0x38] = &CPU::JR_C;
+	instructions[0x18] = &CPU::JR;
 
 	instructions[0xCD] = &CPU::CALL_nn;
 	instructions[0xC9] = &CPU::RET;
@@ -214,16 +220,19 @@ void CPU::LoadCartridge(){
 
 BYTE CPU::Fetch(){
 	BYTE opcode = this->memory.readByte(this->PC.reg);
+	//cout << hex << "0x" << (int)this->PC.reg << ": SP:" << (int)this->SP.reg <<endl;
 	this->PC.reg = this->PC.reg + 1;
 	return opcode;
 }
 
-void CPU::DecodeExecute(BYTE opcode){
+int CPU::DecodeExecute(BYTE opcode){
 	string input;
+	int cycles = 0;
+	
 	if (opcode == 0xcb){
 		opcode = Fetch();
 		if (instructions_cb[opcode] != NULL) {
-			(this->*instructions_cb[opcode])();
+			cycles = (this->*instructions_cb[opcode])();
 		}
 		else {
 			cout << hex << "CB Opcode: cb " << (int)opcode << " is not implemented yet.";
@@ -232,177 +241,283 @@ void CPU::DecodeExecute(BYTE opcode){
 	}
 	else {
 		if (instructions[opcode] != NULL){
-			(this->*instructions[opcode])();
+			cycles = (this->*instructions[opcode])();
 		}
 		else {
 			cout << hex << "Opcode: " << (int)opcode << " is not implemented yet.";
 			cin >> input;
 		}
 	}
+
+	return cycles;
+}
+
+void CPU::UpdateScreen(int cycles) {
+	//read lcd control register
+	BYTE lcdRegister = this->memory.readByte(0xFF40);
+	
+	if ((lcdRegister & BIT7) > 0) {
+		cycleCounter -= cycles;
+		
+		if (cycleCounter <= 0) {
+			BYTE line = this->memory.readByte(0xFF44);
+
+			cycleCounter = 456;
+
+			if (line == 144) {
+				this->gpu.UpdateScreen();
+			}
+			else if((line > 144) && (line <= 153)) {
+				//in V-Blank
+			}
+			else if (line > 153) {
+				//reset Y scanline
+				this->memory.writeByte(0xFF44, 0);
+			}
+			else {
+				DrawLine();
+			}
+
+			line++;
+			this->memory.writeByte(0xFF44, line);
+		}
+	}
+}
+
+void CPU::DrawLine() {
+
+	BYTE ScrollX = this->memory.readByte(0xFF43);
+	BYTE Scrolly = this->memory.readByte(0xFF42);
+
+	BYTE yPixel = this->memory.readByte(0xFF44);
+	BYTE yPixelRow = Scrolly + yPixel;
+	WORD yTileRow = (yPixelRow/8) * 32;
+
+	for (int xPixel = 0; xPixel < 160; xPixel++) {
+
+		BYTE xPixelColumn = ScrollX + xPixel;
+		WORD xTileColumn = xPixelColumn/8;
+
+		WORD backgroundTileMap = 0x9800 + yTileRow + xTileColumn;
+
+		BYTE tileNumber = this->memory.readByte(backgroundTileMap);
+		
+		BYTE row = yPixelRow % 8;
+		row = row * 2; //each pixel row is represented by 2 bytes
+		BYTE tileDataRow = this->memory.readByte(0x8000 + (tileNumber*16) + row);
+		BYTE tileDataRow2 = this->memory.readByte(0x8000 + (tileNumber*16) + row + 1);
+			
+		int xBit = xPixelColumn % 8;
+		xBit -= 7;
+		xBit *= -1;
+
+		BYTE colorValue = GetBit(tileDataRow2, xBit);
+		colorValue = (colorValue << 1) | GetBit(tileDataRow, xBit);
+
+		switch(colorValue){
+			case 0: this->gpu.screen[xPixel][yPixel] = 0; break;
+			case 1:
+			case 2:
+			case 3: this->gpu.screen[xPixel][yPixel] = 1; break;
+		}
+	}
+}
+
+bool CPU::CheckInput(){
+	return this->gpu.CheckInput();
 }
 
 //instructions
 int CPU::LD_A_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "LD A, " << "0x" << (int)immediate << endl;
+	//cout << hex << "LD A, " << "0x" << (int)immediate << endl;
 	this->AF.hi = immediate;
+	return 4;
 }
 
 int CPU::LD_B_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "LD B, " << "0x" << (int)immediate << endl;
+	//cout << hex << "LD B, " << "0x" << (int)immediate << endl;
 	this->BC.hi = immediate;
+	return 4;
 } 
 
 int CPU::LD_C_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "LD C, " << "0x" << (int)immediate << endl;
+	//cout << hex << "LD C, " << "0x" << (int)immediate << endl;
 	this->BC.lo = immediate;
+	return 4;
 }
 
 int CPU::LD_D_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "LD D, " << "0x" << (int)immediate << endl;
+	//cout << hex << "LD D, " << "0x" << (int)immediate << endl;
 	this->DE.hi = immediate;
+	return 4;
 } 
 
 int CPU::LD_E_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "LD E, " << "0x" << (int)immediate << endl;
+	//cout << hex << "LD E, " << "0x" << (int)immediate << endl;
 	this->DE.lo = immediate;
+	return 4;
 }
 
 int CPU::LD_H_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "LD H, " << "0x" << (int)immediate << endl;
+	//cout << hex << "LD H, " << "0x" << (int)immediate << endl;
 	this->HL.hi = immediate;
+	return 4;
 } 
 
 int CPU::LD_L_n(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "LD L, " << "0x" << (int)immediate << endl;
+	//cout << hex << "LD L, " << "0x" << (int)immediate << endl;
 	this->HL.lo = immediate;
+	return 4;
 }
 
 int CPU::LD_A_A() {
-	cout << hex << "LD A, A" << endl;
+	//cout << hex << "LD A, A" << endl;
+	return 4;
 }
 
 int CPU::LD_A_B() {
 	this->AF.hi = this->BC.hi;
-	cout << hex << "LD A, B" << endl;
+	//cout << hex << "LD A, B" << endl;
+	return 4;
 }
 
 int CPU::LD_A_C() {
 	this->AF.hi = this->BC.lo;
-	cout << hex << "LD A, C" << endl;
+	//cout << hex << "LD A, C" << endl;
+	return 4;
 }
 
 int CPU::LD_A_D() {
 	this->AF.hi = this->DE.hi;
-	cout << hex << "LD A, D" << endl;
+	//cout << hex << "LD A, D" << endl;
+	return 4;
 }
 
 int CPU::LD_A_E() {
 	this->AF.hi = this->DE.lo;
-	cout << hex << "LD A, E" << endl;
+	//cout << hex << "LD A, E" << endl;
+	return 4;
 }
 
 int CPU::LD_A_H() {
 	this->AF.hi = this->HL.hi;
-	cout << hex << "LD A, H" << endl;
+	//cout << hex << "LD A, H" << endl;
+	return 4;
 }
 
 int CPU::LD_A_L() {
 	this->AF.hi = this->HL.lo;
-	cout << hex << "LD A, L" << endl;
+	//cout << hex << "LD A, L" << endl;
+	return 4;
 }
 
 int CPU::LD_A_BC() {
 	this->AF.hi = this->memory.readByte(this->BC.reg);
-	cout << hex << "LD A, (BC)" << endl;
+	//cout << hex << "LD A, (BC)" << endl;
+	return 4;
 }
 
 int CPU::LD_A_DE() {
 	this->AF.hi = this->memory.readByte(this->DE.reg);
-	cout << hex << "LD A, (DE)" << endl;
+	//cout << hex << "LD A, (DE)" << endl;
+	return 4;
 }
 
 int CPU::LD_A_HL() {
 	this->AF.hi = this->memory.readByte(this->HL.reg);
-	cout << hex << "LD A, (HL)" << endl;
+	//cout << hex << "LD A, (HL)" << endl;
+	return 4;
 }
 
 int CPU::LD_A_nn() {
 	WORD address = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
 	this->AF.hi = this->memory.readByte(address);
-	cout << hex << "LD A, (0x" << (int)address << ")" << endl;
+	//cout << hex << "LD A, (0x" << (int)address << ")" << endl;
+	return 4;
 }
 
 int CPU::LD_B_A() {
 	this->BC.hi = this->AF.hi;
-	cout << hex << "LD B, A" << endl;
+	//cout << hex << "LD B, A" << endl;
+	return 4;
 }
 
 int CPU::LD_C_A() {
 	this->BC.lo = this->AF.hi;
-	cout << hex << "LD C, A" << endl;
+	//cout << hex << "LD C, A = " << (int)this->AF.hi << endl;
+	return 4;
 }
 
 int CPU::LD_D_A() {
 	this->DE.hi = this->AF.hi;
-	cout << hex << "LD D, A" << endl;
+	//cout << hex << "LD D, A" << endl;
+	return 4;
 }
 
 int CPU::LD_E_A() {
 	this->DE.lo = this->AF.hi;
-	cout << hex << "LD E, A" << endl;
+	//cout << hex << "LD E, A" << endl;
+	return 4;
 }
 
 int CPU::LD_H_A() {
 	this->HL.hi = this->AF.hi;
-	cout << hex << "LD H, A" << endl;
+	//cout << hex << "LD H, A" << endl;
+	return 4;
 }
 
 int CPU::LD_L_A() {
 	this->HL.lo = this->AF.hi;
-	cout << hex << "LD L, A" << endl;
+	//cout << hex << "LD L, A" << endl;
+	return 4;
 }
 
 int CPU::LD_BC_A() {
 	this->memory.writeByte(this->BC.reg, this->AF.hi);
-	cout << hex << "LD (BC), A" << endl;
+	//cout << hex << "LD (BC), A" << endl;
+	return 4;
 }
 
 int CPU::LD_DE_A() {
 	this->memory.writeByte(this->DE.reg, this->AF.hi);
-	cout << hex << "LD (DE), A" << endl;
+	//cout << hex << "LD (DE), A" << endl;
+	return 4;
 }
 
 int CPU::LD_nn_A() {
 	WORD immediate = this->memory.readWord(this->PC.reg);
 	this->PC.reg+=2;
 	this->memory.writeByte(immediate, this->AF.hi);
-	cout << hex << "LD (0x" << (int)immediate << "), A" << endl;
+	//cout << hex << "LD (0x" << (int)immediate << "), A" << endl;
+	return 4;
 }
 
 int CPU::LD_HL_A() {
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
-	cout << hex << "LD (HL), A" << endl;
+	//cout << hex << "LD (HL), A" << endl;
+	return 4;
 }
 
 int CPU::LD_FF00_C_A(){
 	WORD address = 0xFF00 + this->BC.lo;
 	this->memory.writeByte(address, this->AF.hi);
-	cout << hex << "LD ($FF00 + C), A" << endl;
+	//cout << hex << "LD ($FF00 + C), A Address: " << (int)address << " C: " << (int)this->BC.lo << endl;
+	return 4;
 }
 
 int CPU::LD_FF00_n_A(){
@@ -410,7 +525,8 @@ int CPU::LD_FF00_n_A(){
 	this->PC.reg++;
 	WORD address = 0xFF00 + immediate;
 	this->memory.writeByte(address, this->AF.hi);
-	cout << hex << "LD ($FF00 + 0x" << (int)immediate << "), A" << endl;
+	//cout << hex << "LD ($FF00 + 0x" << (int)immediate << "), A" << endl;
+	return 4;
 }
 
 int CPU::LDH_A_FF00_n() {
@@ -418,84 +534,104 @@ int CPU::LDH_A_FF00_n() {
 	this->PC.reg++;
 	WORD address = 0xFF00 + immediate;
 	this->AF.hi = this->memory.readByte(address);
-	cout << hex << "LD A, ($FF00 + 0x" << (int)immediate << ")" << endl;
+	//cout << hex << "LD A, ($FF00 + 0x" << (int)immediate << ")" << endl;
+	return 4;
 }
 
 int CPU::LDD_HL_A(){
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
 	this->HL.reg--;
-	cout << hex << "LDD (HL), A" << endl;
+	//cout << hex << "LDD (HL), A" << endl;
+	return 4;
 }
 
 int CPU::LDI_HL_A(){
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
+	//cout << hex << "HL = " << (int)this->HL.reg << endl;
 	this->HL.reg++;
-	cout << hex << "LDI (HL), A" << endl;
+	//cout << hex << "LDI (HL), A = " << (int)this->AF.hi << endl;
+	return 4;
 }
 
 int CPU::LD_BC_nn(){
 	this->BC.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
-	cout << hex << "LD BC, " << "0x" << (int)this->BC.reg << endl;
+	//cout << hex << "LD BC, " << "0x" << (int)this->BC.reg << endl;
+	return 4;
 }
 
 int CPU::LD_DE_nn(){
 	this->DE.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
-	cout << hex << "LD DE, " << "0x" << (int)this->DE.reg << endl;
+	//cout << hex << "LD DE, " << "0x" << (int)this->DE.reg << endl;
+	return 4;
 }
 
 int CPU::LD_HL_nn(){
 	this->HL.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
-	cout << hex << "LD HL, " << "0x" << (int)this->HL.reg << endl;
+	//cout << hex << "LD HL, " << "0x" << (int)this->HL.reg << endl;
 }
 
 int CPU::LD_SP_nn(){
 	this->SP.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
-	cout << hex << "LD SP, " << "0x" << (int)this->SP.reg << endl;
+	//cout << hex << "LD SP, " << "0x" << (int)this->SP.reg << endl;
+	return 4;
 }
 
 //Jump Instructions
 int CPU::JR_NZ() {
 	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "JR NZ, " << (int)offset << endl;
+	//cout << hex << "JR NZ, " << (int)offset << endl;
 	if (this->flags.z == 0) {
 		this->PC.reg += offset;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		//cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
+	return 4;
 }
 
 int CPU::JR_Z() {
 	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "JR Z, " << (int)offset << endl;
+	//cout << hex << "JR Z, " << (int)offset << endl;
 	if (this->flags.z == 1) {
 		this->PC.reg += offset;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	//	cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
+	return 4;
 }
 
 int CPU::JR_NC() {
 	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "JR NC, " << (int)offset << endl;
+	//cout << hex << "JR NC, " << (int)offset << endl;
 	if (this->flags.c == 0) {
 		this->PC.reg += offset;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	//	cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
+	return 4;
 }
 
 int CPU::JR_C() {
 	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	cout << hex << "JR C, " << (int)offset << endl;
+	//cout << hex << "JR C, " << (int)offset << endl;
 	if (this->flags.c == 1) {
 		this->PC.reg += offset;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	//	cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
+	return 4;
+}
+
+int CPU::JR() {
+	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	//cout << hex << "JR 0x" << (int)offset << endl;
+	this->PC.reg += offset;
+	//cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	return 8;
 }
 
 void CPU::PushWord(WORD value) {
@@ -507,22 +643,23 @@ void CPU::PushWord(WORD value) {
 
 WORD CPU::PopWord() {
 	WORD retVal = PopByte();
-	retVal << 8;
+	retVal = retVal << 8;
 	retVal = retVal | PopByte();
-
+	//cout << hex << "Pop value 0x" << (int)retVal << endl;
 	return retVal;
 }
 
 void CPU::PushByte(BYTE value) {
 	this->SP.reg--;
 	this->memory.writeByte(this->SP.reg, value);
+	//cout << hex << "PUSH SP: 0x" << (int)this->SP.reg << endl;
 }
 
 BYTE CPU::PopByte() {
 	//cout << hex << "sp 0x" << (int)this->SP.reg << endl;
 	BYTE retVal = this->memory.readByte(this->SP.reg);
-	this->SP.reg++;
-    //cout << hex << "pop 0x" << (int)retVal << endl;
+	//cout << hex << "POP SP: 0x" << (int)this->SP.reg << endl;
+	this->SP.reg++; 
 	return retVal;
 }
 
@@ -531,62 +668,102 @@ int CPU::CALL_nn() {
 	this->PC.reg++;
 	PushWord(this->PC.reg);
 	this->PC.reg = immediate;
-	cout << hex << "CALL 0x" << (int)immediate << endl;
+	//cout << hex << "CALL 0x" << (int)immediate << endl;
+	return 4;
 }
 
 int CPU::RET() {
+	//cout << hex << "RET SP: 0x" << (int)this->SP.reg << endl;
 	this->PC.reg = PopWord();
-	cout << hex << "RET to 0x" << (int)this->PC.reg << endl;
-	//string test;
-	//cin >> test;
+//	cout << hex << "RET to 0x" << (int)this->PC.reg << endl;
+	return 4;
 }
 
 int CPU::PUSH_AF() {
 	PushWord(this->AF.reg);
-	cout << hex << "PUSH AF" << endl;
+//	cout << hex << "PUSH AF" << endl;
+	return 4;
 }
 
 int CPU::PUSH_BC() {
 	PushWord(this->BC.reg);
-	cout << hex << "PUSH BC" << endl;
+	//cout << hex << "PUSH BC: " << (int)this->BC.reg << endl;
+	return 4;
 }
 
 int CPU::PUSH_DE() {
 	PushWord(this->DE.reg);
-	cout << hex << "PUSH DE" << endl;
+	//cout << hex << "PUSH DE" << endl;
+	return 4;
 }
 
 int CPU::PUSH_HL() {
 	PushWord(this->HL.reg);
-	cout << hex << "PUSH HL" << endl;
+	//cout << hex << "PUSH HL" << endl;
+	return 4;
 }
 
 int CPU::POP_AF() {
 	this->AF.reg = PopWord();
-	cout << hex << "POP AF" << endl;
+	//cout << hex << "POP AF" << endl;
+	return 4;
 }
 
 int CPU::POP_BC() {
 	this->BC.reg = PopWord();
-	cout << hex << "POP BC" << endl;
+	//cout << hex << "POP BC: " << (int)this->BC.reg << endl;
+	return 4;
 }
 
 int CPU::POP_DE() {
 	this->DE.reg = PopWord();
-	cout << hex << "POP DE" << endl;
+	//cout << hex << "POP DE" << endl;
+	return 4;
 }
 
 int CPU::POP_HL() {
 	this->HL.reg = PopWord();
-	cout << hex << "POP HL" << endl;
+	//cout << hex << "POP HL" << endl;
+	return 4;
 }
 
 
 
 //Math instructions
+BYTE CPU::Subtract(BYTE from, BYTE sub) {
+	bool setHalfCarry = ((int)(from & 0x0F) - (int)(sub & 0x0F) < 0x00);
+	from = from - sub;
+
+	if (from == 0) {
+		this->flags.z = 1;
+	}
+	else {
+		this->flags.z = 0;
+	}
+
+	this->flags.n = 1;
+
+	if (setHalfCarry) {
+		this->flags.h = 0;
+	}
+	else {
+		this->flags.h = 1;
+	}
+	this->flags.c = 0;
+
+	return from;
+}
+
+int CPU::SUB_B() {
+	this->AF.hi = this->AF.hi - this->BC.hi;
+	//cout << "B: " << (int)this->BC.hi << endl;
+	return 4;
+}
+
 int CPU::XOR_A(){
 	this->AF.hi = 0x00;
-	cout << hex << "XOR A" << endl;
+	//cout << hex << "XOR A" << endl;
+	return 4;
 }
 
 void CPU::Compare(BYTE value) {
@@ -599,7 +776,7 @@ void CPU::Compare(BYTE value) {
 	else {
 		this->flags.z = 0;
 	}
-	
+
 	this->flags.n = 1;
 
 	if (setHalfCarry){
@@ -612,50 +789,59 @@ void CPU::Compare(BYTE value) {
 
 int CPU::CP_A() {
 	Compare(this->AF.hi);
-	cout << hex << "CP A"<< endl;
+	//cout << hex << "CP A"<< endl;
+	return 4;
 }
 
 int CPU::CP_B() {
 	Compare(this->BC.hi);
-	cout << hex << "CP B"<< endl;
+	//cout << hex << "CP B"<< endl;
+	return 4;
 }
 
 int CPU::CP_C() {
 	Compare(this->BC.lo);
-	cout << hex << "CP C"<< endl;
+	//cout << hex << "CP C"<< endl;
+	return 4;
 }
 
 int CPU::CP_D() {
 	Compare(this->DE.hi);
-	cout << hex << "CP D"<< endl;
+	//cout << hex << "CP D"<< endl;
+	return 4;
 }
 
 int CPU::CP_E() {
 	Compare(this->DE.lo);
-	cout << hex << "CP E"<< endl;
+	//cout << hex << "CP E"<< endl;
+	return 4;
 }
 
 int CPU::CP_H() {
 	Compare(this->HL.hi);
-	cout << hex << "CP H"<< endl;
+	//cout << hex << "CP H"<< endl;
+	return 4;
 }
 
 int CPU::CP_L() {
 	Compare(this->HL.lo);
-	cout << hex << "CP L"<< endl;
+	//cout << hex << "CP L"<< endl;
+	return 4;
 }
 
 int CPU::CP_MEM_HL() {
 	BYTE value = this->memory.readByte(this->HL.reg);
 	Compare(value);
-	cout << hex << "CP (HL)"<< endl;
+	//cout << hex << "CP (HL)"<< endl;
+	return 4;
 }
 
 int CPU::CP_n() {
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
 	Compare(immediate);
-	cout << hex << "CP 0x" << (int)immediate << endl;
+	//cout << hex << "CP 0x" << (int)immediate << endl;
+	return 4;
 }
 
 
@@ -666,72 +852,90 @@ BYTE CPU::RegInc(BYTE value) {
 	if (value == 0) {
 		this->flags.z = 1;
 	}
+	else {
+		this->flags.z = 0;
+	}
+
 	this->flags.n = 0;
 	if (setHalfCarry){
 		this->flags.h = 1;
 	}
+
+	return value;
 }
 
 int CPU::INC_A() {
 	this->AF.hi = RegInc(this->AF.hi);
-	cout << hex << "INC A" << endl;
+	//cout << hex << "INC A" << endl;
+	return 4;
 }
 
 int CPU::INC_B() {
 	this->BC.hi = RegInc(this->BC.hi);
-	cout << hex << "INC B" << endl;
+	//cout << hex << "INC B" << endl;
+	return 4;
 }
 
 int CPU::INC_C() {
 	this->BC.lo = RegInc(this->BC.lo);
-	cout << hex << "INC C" << endl;
+	//cout << hex << "INC C" << endl;
+	return 4;
 }
 
 int CPU::INC_D() {
 	this->DE.hi = RegInc(this->DE.hi);
-	cout << hex << "INC D" << endl;
+	//cout << hex << "INC D" << endl;
+	return 4;
 }
 
 int CPU::INC_E() {
 	this->DE.lo = RegInc(this->DE.lo);
-	cout << hex << "INC E" << endl;
+	//cout << hex << "INC E" << endl;
+	return 4;
 }
 
 int CPU::INC_H() {
 	this->HL.hi = RegInc(this->HL.hi);
-	cout << hex << "INC H" << endl;
+	//cout << hex << "INC H" << endl;
+	return 4;
 }
 
 int CPU::INC_L() {
 	this->HL.lo = RegInc(this->HL.lo);
-	cout << hex << "INC L" << endl;
+	//cout << hex << "INC L" << endl;
+	return 4;
 }
 
 int CPU::INC_MEM_HL() {
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = RegInc(value);
 	this->memory.writeByte(this->HL.reg, value);
-	cout << hex << "INC (HL)" << endl;
+//	cout << hex << "INC (HL)" << endl;
+	return 4;
 }
 
 int CPU::INC_BC() {
 	this->BC.reg++;
-	cout << hex << "INC BC" << endl;
+//	cout << hex << "INC BC" << endl;
+	return 4;
 }
 
 int CPU::INC_DE() {
 	this->DE.reg++;
-	cout << hex << "INC DE" << endl;
+//	cout << hex << "INC DE" << endl;
+	return 4;
 }
 
 int CPU::INC_HL() {
 	this->HL.reg++;
-	cout << hex << "INC HL" << endl;
+//	cout << hex << "INC HL" << endl;
+	return 4;
 }
 
 int CPU::INC_SP() {
 	this->SP.reg++;
-	cout << hex << "INC SP" << endl;
+	//cout << hex << "INC SP" << endl;
+	return 4;
 }
 
 
@@ -742,72 +946,89 @@ BYTE CPU::RegDec(BYTE value) {
 	if (value == 0) {
 		this->flags.z = 1;
 	}
+	else {
+		this->flags.z = 0;
+	}
+
 	this->flags.n = 1;
 	if (setHalfCarry){
 		this->flags.h = 1;
 	}
+	return value;
 }
 
 int CPU::DEC_A() {
 	this->AF.hi = RegDec(this->AF.hi);
-	cout << hex << "DEC A" << endl;
+	//cout << hex << "DEC A" << endl;
+	return 4;
 }
 
 int CPU::DEC_B() {
 	this->BC.hi = RegDec(this->BC.hi);
-	cout << hex << "DEC B" << endl;
+	//cout << hex << "DEC B: " << (int)this->BC.hi << endl;
+	return 4;
 }
 
 int CPU::DEC_C() {
 	this->BC.lo = RegDec(this->BC.lo);
-	cout << hex << "DEC C" << endl;
+	//cout << hex << "DEC C" << endl;
+	return 4;
 }
 
 int CPU::DEC_D() {
 	this->DE.hi = RegDec(this->DE.hi);
-	cout << hex << "DEC D" << endl;
+	//cout << hex << "DEC D: " << (int)this->DE.hi << endl;
+	return 4;
 }
 
 int CPU::DEC_E() {
 	this->DE.lo = RegDec(this->DE.lo);
-	cout << hex << "DEC E" << endl;
+	//cout << hex << "DEC E" << endl;
+	return 4;
 }
 
 int CPU::DEC_H() {
 	this->HL.hi = RegDec(this->HL.hi);
-	cout << hex << "DEC H" << endl;
+	//cout << hex << "DEC H" << endl;
+	return 4;
 }
 
 int CPU::DEC_L() {
 	this->HL.lo = RegDec(this->HL.lo);
-	cout << hex << "DEC L" << endl;
+	//cout << hex << "DEC L" << endl;
+	return 4;
 }
 
 int CPU::DEC_MEM_HL() {
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = RegDec(value);
 	this->memory.writeByte(this->HL.reg, value);
-	cout << hex << "DEC (HL)" << endl;
+	//cout << hex << "DEC (HL)" << endl;
+	return 4;
 }
 
 int CPU::DEC_BC() {
 	this->BC.reg--;
-	cout << hex << "DEC BC" << endl;
+	//cout << hex << "DEC BC" << endl;
+	return 4;
 }
 
 int CPU::DEC_DE() {
 	this->DE.reg--;
-	cout << hex << "DEC DE" << endl;
+	//cout << hex << "DEC DE" << endl;
+	return 4;
 }
 
 int CPU::DEC_HL() {
 	this->HL.reg--;
-	cout << hex << "DEC HL" << endl;
+	//cout << hex << "DEC HL" << endl;
+	return 4;
 }
 
 int CPU::DEC_SP() {
 	this->SP.reg--;
-	cout << hex << "DEC SP" << endl;
+	//cout << hex << "DEC SP" << endl;
+	return 4;
 }
 
 
@@ -815,7 +1036,7 @@ int CPU::DEC_SP() {
 //Bit instructions
 void CPU::TestBit(BYTE byte, BYTE mask) {
 	byte = byte & mask;
-	cout << hex << (int)byte << endl;
+//	cout << hex << (int)byte << endl;
 	if (byte != 0) {
 		this->flags.z = 0;
 	}
@@ -827,340 +1048,432 @@ void CPU::TestBit(BYTE byte, BYTE mask) {
 	this->flags.h = 1;
 }
 
+BYTE CPU::GetBit(BYTE value, int bitPos) {
+	
+	BYTE mask;
+	switch (bitPos) {
+		case 0: mask = BIT0; break;
+		case 1: mask = BIT1; break;
+		case 2: mask = BIT2; break;
+		case 3: mask = BIT3; break;
+		case 4: mask = BIT4; break;
+		case 5: mask = BIT5; break;
+		case 6: mask = BIT6; break;
+		case 7: mask = BIT7; break;
+	}
+
+	value = value & mask;
+	value = value >> bitPos;
+
+	return value;
+}
+
 int CPU::BIT_0_A() {
 	TestBit(this->AF.hi, BIT0);
-	cout << hex << "Bit 0, A" << endl;
+//	cout << hex << "Bit 0, A" << endl;
+	return 4;
 } 
 
 int CPU::BIT_1_A() {
 	TestBit(this->AF.hi, BIT1);
-	cout << hex << "Bit 1, A" << endl;
+//	cout << hex << "Bit 1, A" << endl;
+	return 4;
 }
 
 int CPU::BIT_2_A() {
 	TestBit(this->AF.hi, BIT2);
-	cout << hex << "Bit 2, A" << endl;
+//	cout << hex << "Bit 2, A" << endl;
+	return 4;
 }
 
 int CPU::BIT_3_A() {
 	TestBit(this->AF.hi, BIT3);
-	cout << hex << "Bit 3, A" << endl;
+//	cout << hex << "Bit 3, A" << endl;
+	return 4;
 }
 
 int CPU::BIT_4_A() {
 	TestBit(this->AF.hi, BIT4);
-	cout << hex << "Bit 4, A" << endl;
+//	cout << hex << "Bit 4, A" << endl;
+	return 4;
 }
 
 int CPU::BIT_5_A() {
 	TestBit(this->AF.hi, BIT5);
-	cout << hex << "Bit 5, A" << endl;
+//	cout << hex << "Bit 5, A" << endl;
+	return 4;
 }
 
 int CPU::BIT_6_A() {
 	TestBit(this->AF.hi, BIT6);
-	cout << hex << "Bit 6, A" << endl;
+//	cout << hex << "Bit 6, A" << endl;
+	return 4;
 }
 
 int CPU::BIT_7_A() {
 	TestBit(this->AF.hi, BIT7);
-	cout << hex << "Bit 7, A" << endl;
+//	cout << hex << "Bit 7, A" << endl;
+	return 4;
 }
 
 int CPU::BIT_0_B() {
 	TestBit(this->BC.hi, BIT0);
-	cout << hex << "Bit 0, B" << endl;
+//	cout << hex << "Bit 0, B" << endl;
+	return 4;
 }
 
 int CPU::BIT_1_B() {
 	TestBit(this->BC.hi, BIT1);
-	cout << hex << "Bit 1, B" << endl;
+//	cout << hex << "Bit 1, B" << endl;
+	return 4;
 }
 
 int CPU::BIT_2_B() {
 	TestBit(this->BC.hi, BIT2);
-	cout << hex << "Bit 2, B" << endl;
+//	cout << hex << "Bit 2, B" << endl;
+	return 4;
 }
 
 int CPU::BIT_3_B() {
 	TestBit(this->BC.hi, BIT3);
-	cout << hex << "Bit 3, B" << endl;
+//	cout << hex << "Bit 3, B" << endl;
+	return 4;
 }
 
 int CPU::BIT_4_B() {
 	TestBit(this->BC.hi, BIT4);
-	cout << hex << "Bit 4, B" << endl;
+//	cout << hex << "Bit 4, B" << endl;
+	return 4;
 }
 
 int CPU::BIT_5_B() {
 	TestBit(this->BC.hi, BIT5);
-	cout << hex << "Bit 5, B" << endl;
+//	cout << hex << "Bit 5, B" << endl;
+	return 4;
 }
 
 int CPU::BIT_6_B() {
 	TestBit(this->BC.hi, BIT6);
-	cout << hex << "Bit 6, B" << endl;
+//	cout << hex << "Bit 6, B" << endl;
+	return 4;
 }
 
 int CPU::BIT_7_B() {
 	TestBit(this->BC.hi, BIT7);
-	cout << hex << "Bit 7, B" << endl;
+//	cout << hex << "Bit 7, B" << endl;
+	return 4;
 }
 
 int CPU::BIT_0_C() {
 	TestBit(this->BC.lo, BIT0);
-	cout << hex << "Bit 0, C" << endl;
+//	cout << hex << "Bit 0, C" << endl;
+	return 4;
 }
 
 int CPU::BIT_1_C() {
 	TestBit(this->BC.lo, BIT1);
-	cout << hex << "Bit 1, C" << endl;
+//	cout << hex << "Bit 1, C" << endl;
+	return 4;
 }
 
 int CPU::BIT_2_C() {
 	TestBit(this->BC.lo, BIT2);
-	cout << hex << "Bit 2, C" << endl;
+//	cout << hex << "Bit 2, C" << endl;
+	return 4;
 }
 
 int CPU::BIT_3_C() {
 	TestBit(this->BC.lo, BIT3);
-	cout << hex << "Bit 3, C" << endl;
+//	cout << hex << "Bit 3, C" << endl;
+	return 4;
 }
 
 int CPU::BIT_4_C() {
 	TestBit(this->BC.lo, BIT4);
-	cout << hex << "Bit 4, C" << endl;
+//	cout << hex << "Bit 4, C" << endl;
+	return 4;
 }
 
 int CPU::BIT_5_C() {
 	TestBit(this->BC.lo, BIT5);
-	cout << hex << "Bit 5, C" << endl;
+//	cout << hex << "Bit 5, C" << endl;
+	return 4;
 }
 
 int CPU::BIT_6_C() {
 	TestBit(this->BC.lo, BIT6);
-	cout << hex << "Bit 6, C" << endl;
+//	cout << hex << "Bit 6, C" << endl;
+	return 4;
 }
 
 int CPU::BIT_7_C() {
 	TestBit(this->BC.lo, BIT7);
-	cout << hex << "Bit 7, C" << endl;
+//	cout << hex << "Bit 7, C" << endl;
+	return 4;
 }
 
 int CPU::BIT_0_D() {
 	TestBit(this->DE.hi, BIT0);
-	cout << hex << "Bit 0, D" << endl;
+//	cout << hex << "Bit 0, D" << endl;
+	return 4;
 }
 
 int CPU::BIT_1_D() {
 	TestBit(this->DE.hi, BIT1);
-	cout << hex << "Bit 1, D" << endl;
+//	cout << hex << "Bit 1, D" << endl;
+	return 4;
 }
 
 int CPU::BIT_2_D() {
 	TestBit(this->DE.hi, BIT2);
-	cout << hex << "Bit 2, D" << endl;
+//	cout << hex << "Bit 2, D" << endl;
+	return 4;
 }
 
 int CPU::BIT_3_D() {
 	TestBit(this->DE.hi, BIT3);
-	cout << hex << "Bit 3, D" << endl;
+//	cout << hex << "Bit 3, D" << endl;
+	return 4;
 }
 
 int CPU::BIT_4_D() {
 	TestBit(this->DE.hi, BIT4);
-	cout << hex << "Bit 4, D" << endl;
+//	cout << hex << "Bit 4, D" << endl;
+	return 4;
 }
 
 int CPU::BIT_5_D() {
 	TestBit(this->DE.hi, BIT5);
-	cout << hex << "Bit 5, D" << endl;
+//	cout << hex << "Bit 5, D" << endl;
+	return 4;
 }
 
 int CPU::BIT_6_D() {
 	TestBit(this->DE.hi, BIT6);
-	cout << hex << "Bit 6, D" << endl;
+//	cout << hex << "Bit 6, D" << endl;
+	return 4;
 }
 
 int CPU::BIT_7_D() {
 	TestBit(this->DE.hi, BIT7);
-	cout << hex << "Bit 7, D" << endl;
+//	cout << hex << "Bit 7, D" << endl;
+	return 4;
 }
  
 int CPU::BIT_0_E() {
 	TestBit(this->DE.lo, BIT0);
-	cout << hex << "Bit 0, E" << endl;
+//	cout << hex << "Bit 0, E" << endl;
+	return 4;
 }
 
 int CPU::BIT_1_E() {
 	TestBit(this->DE.lo, BIT1);
-	cout << hex << "Bit 1, E" << endl;
+//	cout << hex << "Bit 1, E" << endl;
+	return 4;
 }
 
 int CPU::BIT_2_E() {
 	TestBit(this->DE.lo, BIT2);
-	cout << hex << "Bit 2, E" << endl;
+//	cout << hex << "Bit 2, E" << endl;
+	return 4;
 }
 
 int CPU::BIT_3_E() {
 	TestBit(this->DE.lo, BIT3);
-	cout << hex << "Bit 3, E" << endl;
+//	cout << hex << "Bit 3, E" << endl;
+	return 4;
 }
 
 int CPU::BIT_4_E() {
 	TestBit(this->DE.lo, BIT4);
-	cout << hex << "Bit 4, E" << endl;
+//	cout << hex << "Bit 4, E" << endl;
+	return 4;
 }
 
 int CPU::BIT_5_E() {
 	TestBit(this->DE.lo, BIT5);
-	cout << hex << "Bit 5, E" << endl;
+//	cout << hex << "Bit 5, E" << endl;
+	return 4;
 }
 
 int CPU::BIT_6_E() {
 	TestBit(this->DE.lo, BIT6);
-	cout << hex << "Bit 6, E" << endl;
+//	cout << hex << "Bit 6, E" << endl;
+	return 4;
 }
 
 int CPU::BIT_7_E() {
 	TestBit(this->DE.lo, BIT7);
-	cout << hex << "Bit 7, E" << endl;
+//	cout << hex << "Bit 7, E" << endl;
+	return 4;
 }
  
 int CPU::BIT_0_H() {
 	TestBit(this->HL.hi, BIT0);
-	cout << hex << "Bit 0, H" << endl;
+//	cout << hex << "Bit 0, H" << endl;
+	return 4;
 }
 
 int CPU::BIT_1_H() {
 	TestBit(this->HL.hi, BIT1);
-	cout << hex << "Bit 1, H" << endl;
+//	cout << hex << "Bit 1, H" << endl;
+	return 4;
 }
 
 int CPU::BIT_2_H() {
 	TestBit(this->HL.hi, BIT2);
-	cout << hex << "Bit 2, H" << endl;
+//	cout << hex << "Bit 2, H" << endl;
+	return 4;
 }
 
 int CPU::BIT_3_H() {
 	TestBit(this->HL.hi, BIT3);
-	cout << hex << "Bit 3, H" << endl;
+//	cout << hex << "Bit 3, H" << endl;
+	return 4;
 }
 
 int CPU::BIT_4_H() {
 	TestBit(this->HL.hi, BIT4);
-	cout << hex << "Bit 4, H" << endl;
+//	cout << hex << "Bit 4, H" << endl;
+	return 4;
 }
 
 int CPU::BIT_5_H() {
 	TestBit(this->HL.hi, BIT5);
-	cout << hex << "Bit 5, H" << endl;
+//	cout << hex << "Bit 5, H" << endl;
+	return 4;
 }
 
 int CPU::BIT_6_H() {
 	TestBit(this->HL.hi, BIT6);
-	cout << hex << "Bit 6, H" << endl;
+//	cout << hex << "Bit 6, H" << endl;
+	return 4;
 }
 
 int CPU::BIT_7_H() {
 	TestBit(this->HL.hi, BIT7);
-	cout << hex << "BIT 7, H" << endl;
+//	cout << hex << "BIT 7, H" << endl;
+	return 4;
 }
  
 int CPU::BIT_0_L() {
 	TestBit(this->HL.lo, BIT0);
-	cout << hex << "Bit 0, L" << endl;
+//	cout << hex << "Bit 0, L" << endl;
+	return 4;
 }
 
 int CPU::BIT_1_L() {
 	TestBit(this->HL.lo, BIT1);
-	cout << hex << "Bit 1, L" << endl;
+//	cout << hex << "Bit 1, L" << endl;
+	return 4;
 }
 
 int CPU::BIT_2_L() {
 	TestBit(this->HL.lo, BIT2);
-	cout << hex << "Bit 2, L" << endl;
+//	cout << hex << "Bit 2, L" << endl;
+	return 4;
 }
 
 int CPU::BIT_3_L() {
 	TestBit(this->HL.lo, BIT3);
-	cout << hex << "Bit 3, L" << endl;
+//	cout << hex << "Bit 3, L" << endl;
+	return 4;
 }
 
 int CPU::BIT_4_L() {
 	TestBit(this->HL.lo, BIT4);
-	cout << hex << "Bit 4, L" << endl;
+//	cout << hex << "Bit 4, L" << endl;
+	return 4;
 }
 
 int CPU::BIT_5_L() {
 	TestBit(this->HL.lo, BIT5);
-	cout << hex << "Bit 5, L" << endl;
+//	cout << hex << "Bit 5, L" << endl;
+	return 4;
 }
 
 int CPU::BIT_6_L() {
 	TestBit(this->HL.lo, BIT6);
-	cout << hex << "Bit 6, L" << endl;
+//	cout << hex << "Bit 6, L" << endl;
+	return 4;
 }
 
 int CPU::BIT_7_L() {
 	TestBit(this->HL.lo, BIT7);
-	cout << hex << "Bit 7, L" << endl;
+//	cout << hex << "Bit 7, L" << endl;
+	return 4;
 }
 
 int CPU::BIT_0_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT0);
-	cout << hex << "Bit 0, (HL)" << endl;
+//	cout << hex << "Bit 0, (HL)" << endl;
+	return 4;
 }
 int CPU::BIT_1_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT1);
-	cout << hex << "Bit 1, (HL)" << endl;
+//	cout << hex << "Bit 1, (HL)" << endl;
+	return 4;
 }
 int CPU::BIT_2_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT2);
-	cout << hex << "Bit 2, (HL)" << endl;
+//	cout << hex << "Bit 2, (HL)" << endl;
+	return 4;
 }
 int CPU::BIT_3_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT3);
-	cout << hex << "Bit 3, (HL)" << endl;
+//	cout << hex << "Bit 3, (HL)" << endl;
+	return 4;
 }
 int CPU::BIT_4_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT4);
-	cout << hex << "Bit 4, (HL)" << endl;
+//	cout << hex << "Bit 4, (HL)" << endl;
+	return 4;
 }
 int CPU::BIT_5_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT5);
-	cout << hex << "Bit 5, (HL)" << endl;
+//	cout << hex << "Bit 5, (HL)" << endl;
+	return 4;
 }
 int CPU::BIT_6_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT6);
-	cout << hex << "Bit 6, (HL)" << endl;
+//	cout << hex << "Bit 6, (HL)" << endl;
+	return 4;
 }
 int CPU::BIT_7_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT7);
-	cout << hex << "Bit 7, (HL)" << endl;
+//	cout << hex << "Bit 7, (HL)" << endl;
+	return 4;
 }
 
 BYTE CPU::Rotate(BYTE value, Direction direction) {
 	if (direction == Direction::right) {
-		this->flags.c = value & BIT0;
+		BYTE carry = value & BIT0;
 		value = value >> 1;
+		value = value | (this->flags.c << 7);
+		this->flags.c = carry;
 	}
 	else {
-		this->flags.c = (value & BIT7) >> 7;
+		BYTE carry = (value & BIT7) >> 7;
 		value = value << 1;
+		value = value | this->flags.c;
+		this->flags.c = carry;
 	}
 
 	if (value == 0) {
 		this->flags.z = 1;
 	}
+	else {
+		this->flags.z = 0;
+	}
+
 	this->flags.n = 0;
 	this->flags.h = 0;
 
@@ -1169,48 +1482,56 @@ BYTE CPU::Rotate(BYTE value, Direction direction) {
 
 int CPU::RLA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left);
-	cout << hex << "RLA" << endl;
+	return 4;
 }
 
 int CPU::RL_A() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left);
-	cout << hex << "RL A" << endl;
+//	cout << hex << "RL A" << endl;
+	return 4;
 }
 
 int CPU::RL_B() {
 	this->BC.hi = Rotate(this->BC.hi, Direction::left);
-	cout << hex << "RL B" << endl;
+//	cout << hex << "RL B" << endl;
+	return 4;
 }
 
 int CPU::RL_C() {
 	this->BC.lo = Rotate(this->BC.lo, Direction::left);
-	cout << hex << "RL C" << endl;
+	//cout << hex << "RL C" << endl;
+	return 4;
 }
 
 int CPU::RL_D() {
 	this->DE.hi = Rotate(this->DE.hi, Direction::left);
-	cout << hex << "RL D" << endl;
+//	cout << hex << "RL D" << endl;
+	return 4;
 }
 
 int CPU::RL_E() {
 	this->DE.lo = Rotate(this->DE.lo, Direction::left);
-	cout << hex << "RL E" << endl;
+//	cout << hex << "RL E" << endl;
+	return 4;
 }
 
 int CPU::RL_H() {
 	this->HL.hi = Rotate(this->HL.hi, Direction::left);
-	cout << hex << "RL H" << endl;
+//	cout << hex << "RL H" << endl;
+	return 4;
 }
 
 int CPU::RL_L() {
 	this->HL.lo = Rotate(this->HL.lo, Direction::left);
-	cout << hex << "RL L" << endl;
+//	cout << hex << "RL L" << endl;
+	return 4;
 }
 
 int CPU::RL_HL() {
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = Rotate(value, Direction::left);
 	this->memory.writeByte(this->HL.reg, value);
-	cout << hex << "RL (HL)" << endl;
+//	cout << hex << "RL (HL)" << endl;
+	return 4;
 }
 
