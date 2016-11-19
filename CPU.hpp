@@ -118,6 +118,7 @@ class CPU{
 		int JR_NC();
 		int JR_C();
 		int JR();
+		int JP_nn();
 
 		//Stack instructions
 		void PushWord(WORD value);

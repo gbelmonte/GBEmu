@@ -93,10 +93,7 @@ bool Memory::LoadCartridge(){
 	BYTE game[0x200000];
 
 	result = fread(game, 1, 200000, pFile);
-
-	for (int i = 0x100; i < 0x200; i++) {
-		Cartridge[i] = game[i];
-	}
+	memcpy(Cartridge + 0x100, game + 0x100, (200000 - 0x100) * sizeof(BYTE));
 
 	return true;
 }

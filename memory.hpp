@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <string.h>
 
 // Cartridge 0 to 0x7FFF 32KB
 // Video Ram 0x8000 to 0x9FFF 8KB

@@ -121,7 +121,9 @@ CPU::CPU(){
 	instructions[0x30] = &CPU::JR_NC;
 	instructions[0x38] = &CPU::JR_C;
 	instructions[0x18] = &CPU::JR;
+	instructions[0xc3] = &CPU::JP_nn;
 
+	//Stack
 	instructions[0xCD] = &CPU::CALL_nn;
 	instructions[0xC9] = &CPU::RET;
 	instructions[0xF5] = &CPU::PUSH_AF;
@@ -635,6 +637,13 @@ int CPU::JR() {
 	this->PC.reg += offset;
 	//cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	return 8;
+}
+
+int CPU::JP_nn() {
+	WORD address = this->memory.readWord(this->PC.reg);
+	cout << hex << "Jump to: 0x" << address << endl;
+	this->PC.reg = address;
+	return 12;
 }
 
 void CPU::PushWord(WORD value) {
