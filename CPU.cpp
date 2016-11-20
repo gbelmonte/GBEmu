@@ -59,6 +59,8 @@ CPU::CPU(){
 	instructions[0x32] = &CPU::LDD_HL_A;
 	instructions[0x22] = &CPU::LDI_HL_A;
 
+	instructions[0x2A] = &CPU::LDI_A_HL;
+
 	//16 bit load immediate
 	instructions[0xF9] = &CPU::LD_SP_HL;
 	instructions[0x01] = &CPU::LD_BC_nn;
@@ -74,6 +76,36 @@ CPU::CPU(){
 
 	//XORs
 	instructions[0xAF] = &CPU::XOR_A;
+	instructions[0xA8] = &CPU::XOR_B;
+	instructions[0xA9] = &CPU::XOR_C;
+	instructions[0xAA] = &CPU::XOR_D;
+	instructions[0xAB] = &CPU::XOR_E;
+	instructions[0xAC] = &CPU::XOR_H;
+	instructions[0xAD] = &CPU::XOR_L;
+	instructions[0xAE] = &CPU::XOR_HL;
+	instructions[0xEE] = &CPU::XOR_n;
+
+	//ANDs
+	instructions[0xA7] = &CPU::AND_A;
+	instructions[0xA0] = &CPU::AND_B;
+	instructions[0xA1] = &CPU::AND_C;
+	instructions[0xA2] = &CPU::AND_D;
+	instructions[0xA3] = &CPU::AND_E;
+	instructions[0xA4] = &CPU::AND_H;
+	instructions[0xA5] = &CPU::AND_l;
+	instructions[0xA6] = &CPU::AND_HL;
+	instructions[0xE6] = &CPU::AND_n;
+
+	//ORs
+	instructions[0xB7] = &CPU::OR_A;
+	instructions[0xB0] = &CPU::OR_B;
+	instructions[0xB1] = &CPU::OR_C;
+	instructions[0xB2] = &CPU::OR_D;
+	instructions[0xB3] = &CPU::OR_E;
+	instructions[0xB4] = &CPU::OR_H;
+	instructions[0xB5] = &CPU::OR_L;
+	instructions[0xB6] = &CPU::OR_HL;
+	instructions[0xF6] = &CPU::OR_n;
 
 	instructions[0xBF] = &CPU::CP_A;
 	instructions[0xB8] = &CPU::CP_B;
@@ -115,6 +147,7 @@ CPU::CPU(){
 	instructions[0x3B] = &CPU::DEC_SP;
 
 	instructions[0x17] = &CPU::RLA;
+	instructions[0x07] = &CPU::RLCA;
 
 	//Jumps
 	instructions[0x20] = &CPU::JR_NZ;
@@ -127,6 +160,10 @@ CPU::CPU(){
 	//Stack
 	instructions[0xCD] = &CPU::CALL_nn;
 	instructions[0xC9] = &CPU::RET;
+	instructions[0xC0] = &CPU::RET_NZ;
+	instructions[0xC8] = &CPU::RET_Z;
+	instructions[0xD0] = &CPU::RET_NC;
+	instructions[0xD8] = &CPU::RET_C;
 	instructions[0xF5] = &CPU::PUSH_AF;
 	instructions[0xC5] = &CPU::PUSH_BC;
 	instructions[0xD5] = &CPU::PUSH_DE;
@@ -226,7 +263,7 @@ void CPU::LoadCartridge(){
 
 BYTE CPU::Fetch(){
 	BYTE opcode = this->memory.readByte(this->PC.reg);
-	//cout << hex << "0x" << (int)this->PC.reg << endl;
+	cout << hex << "0x" << (int)this->PC.reg << endl;
 	this->PC.reg = this->PC.reg + 1;
 	return opcode;
 }
@@ -559,6 +596,12 @@ int CPU::LDI_HL_A(){
 	return 4;
 }
 
+int CPU::LDI_A_HL() {
+	this->AF.hi = this->memory.readByte(this->HL.reg);
+	this->HL.reg++;
+	return 8;
+}
+
 int CPU::LD_SP_HL() {
 	this->SP.reg = this->HL.reg;
 	return 8;
@@ -691,10 +734,36 @@ int CPU::CALL_nn() {
 }
 
 int CPU::RET() {
-	//cout << hex << "RET SP: 0x" << (int)this->SP.reg << endl;
 	this->PC.reg = PopWord();
-//	cout << hex << "RET to 0x" << (int)this->PC.reg << endl;
-	return 4;
+	return 8;
+}
+
+int CPU::RET_NZ() {
+	if (this->flags.z == 0) {
+		this->PC.reg = PopWord();
+	}
+	return 8;
+}
+
+int CPU::RET_Z() {
+	if (this->flags.z == 1) {
+		this->PC.reg = PopWord();
+	}
+	return 8;
+}
+
+int CPU::RET_NC() {
+	if (this->flags.c == 0) {
+		this->PC.reg = PopWord();
+	}
+	return 8;
+}
+
+int CPU::RET_C() {
+	if (this->flags.c == 1) {
+		this->PC.reg = PopWord();
+	}
+	return 8;
 }
 
 int CPU::PUSH_AF() {
@@ -812,10 +881,191 @@ int CPU::SUB_B() {
 	return 4;
 }
 
-int CPU::XOR_A(){
-	this->AF.hi = 0x00;
+BYTE CPU::XOR(BYTE operand1, BYTE operand2) {
+	BYTE retVal = operand1 ^ operand2;
+	if (retVal == 0) {
+		this->flags.z = 1;
+	}
+	else {
+		this->flags.z = 0;
+	}
+
+	this->flags.n = 0;
+	this->flags.c = 0;
+	this->flags.h = 0;
+
+	return retVal;
+}
+
+int CPU::XOR_A() {
+	this->AF.hi = XOR(this->AF.hi, this->AF.hi);
 	//cout << hex << "XOR A" << endl;
 	return 4;
+}
+
+int CPU::XOR_B() {
+	this->AF.hi = XOR(this->AF.hi, this->BC.hi);
+	return 4;
+}
+
+int CPU::XOR_C() {
+	this->AF.hi = XOR(this->AF.hi, this->BC.lo);
+	return 4;
+}
+
+int CPU::XOR_D() {
+	this->AF.hi = XOR(this->AF.hi, this->DE.hi);
+	return 4;
+}
+
+int CPU::XOR_E() {
+	this->AF.hi = XOR(this->AF.hi, this->DE.lo);
+	return 4;
+}
+
+int CPU::XOR_H() {
+	this->AF.hi = XOR(this->AF.hi, this->HL.hi);
+	return 4;
+}
+
+int CPU::XOR_L() {
+	this->AF.hi = XOR(this->AF.hi, this->HL.lo);
+	return 4;
+}
+
+int CPU::XOR_HL() {
+	this->AF.hi = XOR(this->AF.hi, this->memory.readByte(this->HL.reg));
+	return 8;	
+}
+
+int CPU::XOR_n() {
+	this->AF.hi = XOR(this->AF.hi, this->memory.readByte(this->PC.reg));
+	this->PC.reg++;
+	return 8;
+}
+
+BYTE CPU::AND(BYTE operand1, BYTE operand2) {
+	BYTE retVal = operand1 & operand2;
+	if (retVal == 0) {
+		this->flags.z = 1;
+	}
+	else {
+		this->flags.z = 0;
+	}
+
+	this->flags.n = 0;
+	this->flags.c = 0;
+	this->flags.h = 1;
+
+	return retVal;
+}
+
+int CPU::AND_A() {
+	AND(this->AF.hi, this->AF.hi);
+	return 4;
+}
+
+int CPU::AND_B() {
+	this->AF.hi = AND(this->AF.hi, this->BC.hi);
+	return 4;
+}
+
+int CPU::AND_C() {
+	this->AF.hi = AND(this->AF.hi, this->BC.lo);
+	return 4;
+}
+
+int CPU::AND_D() {
+	this->AF.hi = AND(this->AF.hi, this->DE.hi);
+	return 4;
+}
+
+int CPU::AND_E() {
+	this->AF.hi = AND(this->AF.hi, this->DE.lo);
+	return 4;
+}
+
+int CPU::AND_H() {
+	this->AF.hi = AND(this->AF.hi, this->HL.hi);
+	return 4;
+}
+
+int CPU::AND_l() {
+	this->AF.hi = AND(this->AF.hi, this->HL.lo);
+	return 4;
+}
+
+int CPU::AND_HL() {
+	this->AF.hi = AND(this->AF.hi, this->memory.readByte(this->HL.reg));
+	return 8;
+}
+
+int CPU::AND_n() {
+	this->AF.hi = AND(this->AF.hi, this->memory.readByte(this->PC.reg));
+	this->PC.reg++;
+	return 8;
+}
+
+BYTE CPU::OR(BYTE operand1, BYTE operand2) {
+	BYTE retVal = operand1 | operand2;
+	if (retVal == 0) {
+		this->flags.z = 1;
+	}
+	else {
+		this->flags.z = 0;
+	}
+
+	this->flags.n = 0;
+	this->flags.c = 0;
+	this->flags.h = 0;
+
+	return retVal;
+}
+
+int CPU::OR_A() {
+	OR(this->AF.hi, this->AF.hi);
+	return 4;
+}
+
+int CPU::OR_B() {
+	this->AF.hi = OR(this->AF.hi, this->BC.hi);
+	return 4;
+}
+
+int CPU::OR_C() {
+	this->AF.hi = OR(this->AF.hi, this->BC.lo);
+	return 4;
+}
+
+int CPU::OR_D() {
+	this->AF.hi = OR(this->AF.hi, this->DE.hi);
+	return 4;
+}
+
+int CPU::OR_E() {
+	this->AF.hi = OR(this->AF.hi, this->DE.lo);
+	return 4;
+}
+
+int CPU::OR_H() {
+	this->AF.hi = OR(this->AF.hi, this->HL.hi);
+	return 4;
+}
+
+int CPU::OR_L() {
+	this->AF.hi = OR(this->AF.hi, this->HL.lo);
+	return 4;
+}
+
+int CPU::OR_HL() {
+	this->AF.hi = OR(this->AF.hi, this->memory.readByte(this->HL.reg));
+	return 8;
+}
+
+int CPU::OR_n() {
+	this->AF.hi = OR(this->AF.hi, this->memory.readByte(this->PC.reg));
+	this->PC.reg++;
+	return 8;
 }
 
 void CPU::Compare(BYTE value) {
@@ -1508,16 +1758,18 @@ int CPU::BIT_7_HL() {
 	return 4;
 }
 
-BYTE CPU::Rotate(BYTE value, Direction direction) {
+BYTE CPU::Rotate(BYTE value, Direction direction, bool fromC) {
 	if (direction == Direction::right) {
 		BYTE carry = value & BIT0;
 		value = value >> 1;
-		value = value | (this->flags.c << 7);
+		BYTE sevenBit = (fromC) ? this->flags.c : carry;
+		value = value | (sevenBit << 7);
 		this->flags.c = carry;
 	}
 	else {
 		BYTE carry = (value & BIT7) >> 7;
 		value = value << 1;
+		BYTE zeroBit = (fromC) ? this->flags.c : carry; 
 		value = value | this->flags.c;
 		this->flags.c = carry;
 	}
@@ -1537,6 +1789,11 @@ BYTE CPU::Rotate(BYTE value, Direction direction) {
 
 int CPU::RLA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left);
+	return 4;
+}
+
+int CPU::RLCA() {
+	this->AF.hi = Rotate(this->AF.hi, Direction::left, false);
 	return 4;
 }
 

@@ -83,6 +83,8 @@ class CPU{
 		int LDD_HL_A();
 		int LDI_HL_A();
 
+		int LDI_A_HL();
+
 		//16 bit loads
 		int LD_SP_HL();
 		int LD_BC_nn();
@@ -99,7 +101,40 @@ class CPU{
 		int SUB_B();
 
 		//XOR
+		BYTE XOR(BYTE operand1, BYTE operand2);
 		int XOR_A();
+		int XOR_B();
+		int XOR_C();
+		int XOR_D();
+		int XOR_E();
+		int XOR_H();
+		int XOR_L();
+		int XOR_HL();
+		int XOR_n();
+
+		//And
+		BYTE AND(BYTE operand1, BYTE operand2);
+		int AND_A();
+		int AND_B();
+		int AND_C();
+		int AND_D();
+		int AND_E();
+		int AND_H();
+		int AND_l();
+		int AND_HL();
+		int AND_n();
+
+		//Or
+		BYTE OR(BYTE operand1, BYTE operand2);
+		int OR_A();
+		int OR_B();
+		int OR_C();
+		int OR_D();
+		int OR_E();
+		int OR_H();
+		int OR_L();
+		int OR_HL();
+		int OR_n();
 
 		//CP
 		void Compare(BYTE value);
@@ -129,6 +164,10 @@ class CPU{
 
 		int CALL_nn();
 		int RET();
+		int RET_NZ();
+		int RET_Z();
+		int RET_NC();
+		int RET_C();
 		int PUSH_AF();
 		int PUSH_BC();
 		int PUSH_DE();
@@ -246,9 +285,10 @@ class CPU{
 		int BIT_7_HL();
 
 		//Rotates
-		BYTE Rotate(BYTE value, Direction direction);
+		BYTE Rotate(BYTE value, Direction direction, bool fromC = true);
 
 		int RLA();
+		int RLCA();
 		int RL_A();
 		int RL_B();
 		int RL_C();
