@@ -15,6 +15,12 @@
 		High Ram 0xFF80 to 0xFFFE
 		Interrupt Switch 0xFFFF
 */
+
+enum CartridgeType {
+	Rom,
+	Rom_MBC1
+};
+
 class Memory {
 	public:
 		Memory();
@@ -28,6 +34,13 @@ class Memory {
 		bool LoadCartridge();
 
 	private:
-		BYTE Rom[0x200000];
-		BYTE Cartridge[0x200000];
+		BYTE Rom[200000];
+		BYTE Ram[200000];
+		BYTE Cartridge[200000];
+
+		CartridgeType type;
+		bool RomMode;
+		bool RamEnabled;
+		int RomBank;
+		int RamBank;
 };

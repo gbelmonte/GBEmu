@@ -60,6 +60,7 @@ CPU::CPU(){
 	instructions[0x22] = &CPU::LDI_HL_A;
 
 	//16 bit load immediate
+	instructions[0xF9] = &CPU::LD_SP_HL;
 	instructions[0x01] = &CPU::LD_BC_nn;
 	instructions[0x11] = &CPU::LD_DE_nn;
 	instructions[0x21] = &CPU::LD_HL_nn;
@@ -556,6 +557,11 @@ int CPU::LDI_HL_A(){
 	this->HL.reg++;
 	//cout << hex << "LDI (HL), A = " << (int)this->AF.hi << endl;
 	return 4;
+}
+
+int CPU::LD_SP_HL() {
+	this->SP.reg = this->HL.reg;
+	return 8;
 }
 
 int CPU::LD_BC_nn(){

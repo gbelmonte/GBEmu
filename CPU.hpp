@@ -84,6 +84,7 @@ class CPU{
 		int LDI_HL_A();
 
 		//16 bit loads
+		int LD_SP_HL();
 		int LD_BC_nn();
 		int LD_DE_nn();
 		int LD_HL_nn();
