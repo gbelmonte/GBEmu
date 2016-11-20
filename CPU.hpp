@@ -64,6 +64,54 @@ class CPU{
 		int LD_A_HL();
 		int LD_A_nn();
 
+		int LD_B_B();
+		int LD_B_C();
+		int LD_B_D();
+		int LD_B_E();
+		int LD_B_H();
+		int LD_B_L();
+		int LD_B_HL();
+
+		int LD_C_B();
+		int LD_C_C();
+		int LD_C_D();
+		int LD_C_E();
+		int LD_C_H();
+		int LD_C_L();
+		int LD_C_HL();
+
+		int LD_D_B();
+		int LD_D_C();
+		int LD_D_D();
+		int LD_D_E();
+		int LD_D_H();
+		int LD_D_L();
+		int LD_D_HL();
+
+		int LD_E_B();
+		int LD_E_C();
+		int LD_E_D();
+		int LD_E_E();
+		int LD_E_H();
+		int LD_E_L();
+		int LD_E_HL();
+
+		int LD_H_B();
+		int LD_H_C();
+		int LD_H_D();
+		int LD_H_E();
+		int LD_H_H();
+		int LD_H_L();
+		int LD_H_HL();
+
+		int LD_L_B();
+		int LD_L_C();
+		int LD_L_D();
+		int LD_L_E();
+		int LD_L_H();
+		int LD_L_L();
+		int LD_L_HL();
+
 		int LD_B_A();
 		int LD_C_A();
 		int LD_D_A();
@@ -75,6 +123,14 @@ class CPU{
 		int LD_nn_A();
 
 		int LD_HL_A();
+		int LD_HL_B();
+		int LD_HL_C();
+		int LD_HL_D();
+		int LD_HL_E();
+		int LD_HL_H();
+		int LD_HL_L();
+		int LD_HL_n();
+
 		int LD_FF00_C_A();
 		int LD_FF00_n_A();
 		int LDH_A_FF00_n();
@@ -91,14 +147,41 @@ class CPU{
 		int LD_DE_nn();
 		int LD_HL_nn();
 		int LD_SP_nn();
+		int LD_nn_SP();
 
 		//ADD
-		BYTE Add(BYTE operand1, BYTE operand2);
+		BYTE Add(BYTE operand1, BYTE operand2, bool addCarryFlag = false);
+		int ADD_A();
+		int ADD_B();
+		int ADD_C();
+		int ADD_D();
+		int ADD_E();
+		int ADD_H();
+		int ADD_L();
 		int ADD_HL();
+		int ADD_n();
+
+		int ADC_A();
+		int ADC_B();
+		int ADC_C();
+		int ADC_D();
+		int ADC_E();
+		int ADC_H();
+		int ADC_L();
+		int ADC_HL();
+		int ADC_n();
 
 		//SUB
 		BYTE Subtract(BYTE from, BYTE sub);
+		int SUB_A();
 		int SUB_B();
+		int SUB_C();
+		int SUB_D();
+		int SUB_E();
+		int SUB_H();
+		int SUB_L();
+		int SUB_HL();
+		int SUB_n();
 
 		//XOR
 		BYTE XOR(BYTE operand1, BYTE operand2);
@@ -163,6 +246,10 @@ class CPU{
 		BYTE PopByte();
 
 		int CALL_nn();
+		int CALL_NZ_nn();
+		int CALL_Z_nn();
+		int CALL_NC_nn();
+		int CALL_C_nn(); 
 		int RET();
 		int RET_NZ();
 		int RET_Z();
@@ -286,9 +373,22 @@ class CPU{
 
 		//Rotates
 		BYTE Rotate(BYTE value, Direction direction, bool fromC = true);
+		BYTE Shift(BYTE value, Direction direction, bool resetSB = true);
 
 		int RLA();
 		int RLCA();
+		int RRA();
+		int RRCA();
+
+		int RLC_A();
+		int RLC_B();
+		int RLC_C();
+		int RLC_D();
+		int RLC_E();
+		int RLC_H();
+		int RLC_L();
+		int RLC_HL();
+
 		int RL_A();
 		int RL_B();
 		int RL_C();
@@ -297,4 +397,51 @@ class CPU{
 		int RL_H();
 		int RL_L();
 		int RL_HL();
+
+		int RRC_A();
+		int RRC_B();
+		int RRC_C();
+		int RRC_D();
+		int RRC_E();
+		int RRC_H();
+		int RRC_L();
+		int RRC_HL();
+
+		int RR_A();
+		int RR_B();
+		int RR_C();
+		int RR_D();
+		int RR_E();
+		int RR_H();
+		int RR_L();
+		int RR_HL();
+
+		int SLA_A();
+		int SLA_B();
+		int SLA_C();
+		int SLA_D();
+		int SLA_E();
+		int SLA_H();
+		int SLA_L();
+		int SLA_HL();
+
+		int SRA_A();
+		int SRA_B();
+		int SRA_C();
+		int SRA_D();
+		int SRA_E();
+		int SRA_H();
+		int SRA_L();
+		int SRA_HL();
+
+		int SRL_A();
+		int SRL_B();
+		int SRL_C();
+		int SRL_D();
+		int SRL_E();
+		int SRL_H();
+		int SRL_L();
+		int SRL_HL();
+
+		int DI();
 };

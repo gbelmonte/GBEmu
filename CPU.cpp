@@ -3,8 +3,8 @@
 CPU::CPU(){
 	//Init Registers
 	this->SP.reg = 0xFFFE;
-	//this->PC.reg = 0x100;
-	this->PC.reg = 0x00;
+	this->PC.reg = 0x100;
+	//this->PC.reg = 0x00;
 
 	this->AF.reg = 0x01B0;
 	this->BC.reg = 0x0013;
@@ -16,6 +16,10 @@ CPU::CPU(){
 	//Init instructions
 	for (int i = 0; i < (sizeof((instructions))/sizeof((instructions[0]))); i++ ){
 		instructions[i] = NULL;
+	}
+
+	for (int i = 0; i < (sizeof((instructions_cb))/sizeof((instructions_cb[0]))); i++ ){
+		instructions_cb[i] = NULL;
 	}
 
 	instructions[0x00] = &CPU::NOP;
@@ -40,6 +44,54 @@ CPU::CPU(){
 	instructions[0x7E] = &CPU::LD_A_HL;
 	instructions[0xFA] = &CPU::LD_A_nn;
 
+	instructions[0x40] = &CPU::LD_B_B;
+	instructions[0x41] = &CPU::LD_B_C;
+	instructions[0x42] = &CPU::LD_B_D;
+	instructions[0x43] = &CPU::LD_B_E;
+	instructions[0x44] = &CPU::LD_B_H;
+	instructions[0x45] = &CPU::LD_B_L;
+	instructions[0x46] = &CPU::LD_B_HL;
+
+	instructions[0x48] = &CPU::LD_C_B;
+	instructions[0x49] = &CPU::LD_C_C;
+	instructions[0x4A] = &CPU::LD_C_D;
+	instructions[0x4B] = &CPU::LD_C_E;
+	instructions[0x4C] = &CPU::LD_C_H;
+	instructions[0x4D] = &CPU::LD_C_L;
+	instructions[0x4E] = &CPU::LD_C_HL;
+
+	instructions[0x50] = &CPU::LD_D_B;
+	instructions[0x51] = &CPU::LD_D_C;
+	instructions[0x52] = &CPU::LD_D_D;
+	instructions[0x53] = &CPU::LD_D_E;
+	instructions[0x54] = &CPU::LD_D_H;
+	instructions[0x55] = &CPU::LD_D_L;
+	instructions[0x56] = &CPU::LD_D_HL;
+
+	instructions[0x58] = &CPU::LD_E_B;
+	instructions[0x59] = &CPU::LD_E_C;
+	instructions[0x5A] = &CPU::LD_E_D;
+	instructions[0x5B] = &CPU::LD_E_E;
+	instructions[0x5C] = &CPU::LD_E_H;
+	instructions[0x5D] = &CPU::LD_E_L;
+	instructions[0x5E] = &CPU::LD_E_HL;
+
+	instructions[0x60] = &CPU::LD_H_B;
+	instructions[0x61] = &CPU::LD_H_C;
+	instructions[0x62] = &CPU::LD_H_D;
+	instructions[0x63] = &CPU::LD_H_E;
+	instructions[0x64] = &CPU::LD_H_H;
+	instructions[0x65] = &CPU::LD_H_L;
+	instructions[0x66] = &CPU::LD_H_HL;
+
+	instructions[0x68] = &CPU::LD_L_B;
+	instructions[0x69] = &CPU::LD_L_C;
+	instructions[0x6A] = &CPU::LD_L_D;
+	instructions[0x6B] = &CPU::LD_L_E;
+	instructions[0x6C] = &CPU::LD_L_H;
+	instructions[0x6D] = &CPU::LD_L_L;
+	instructions[0x6E] = &CPU::LD_L_HL;
+
 	instructions[0x47] = &CPU::LD_B_A;
 	instructions[0x4F] = &CPU::LD_C_A;
 	instructions[0x57] = &CPU::LD_D_A;
@@ -51,6 +103,14 @@ CPU::CPU(){
 	instructions[0xEA] = &CPU::LD_nn_A;
 
 	instructions[0x77] = &CPU::LD_HL_A;
+	instructions[0x70] = &CPU::LD_HL_B;
+	instructions[0x71] = &CPU::LD_HL_C;
+	instructions[0x72] = &CPU::LD_HL_D;
+	instructions[0x73] = &CPU::LD_HL_E;
+	instructions[0x74] = &CPU::LD_HL_H;
+	instructions[0x75] = &CPU::LD_HL_L;
+	instructions[0x36] = &CPU::LD_HL_n;
+
 	instructions[0xe2] = &CPU::LD_FF00_C_A;
 	instructions[0xe0] = &CPU::LD_FF00_n_A;
 	instructions[0xF0] = &CPU::LDH_A_FF00_n;
@@ -67,12 +127,39 @@ CPU::CPU(){
 	instructions[0x11] = &CPU::LD_DE_nn;
 	instructions[0x21] = &CPU::LD_HL_nn;
 	instructions[0x31] = &CPU::LD_SP_nn;
+	instructions[0x08] = &CPU::LD_nn_SP;
 
 	//Add
+	instructions[0x87] = &CPU::ADD_A;
+	instructions[0x80] = &CPU::ADD_B;
+	instructions[0x81] = &CPU::ADD_C;
+	instructions[0x82] = &CPU::ADD_D;
+	instructions[0x83] = &CPU::ADD_E;
+	instructions[0x84] = &CPU::ADD_H;
+	instructions[0x85] = &CPU::ADD_L;
 	instructions[0x86] = &CPU::ADD_HL;
+	instructions[0xC6] = &CPU::ADD_n;
+
+	instructions[0x8F] = &CPU::ADC_A;
+	instructions[0x88] = &CPU::ADC_B;
+	instructions[0x89] = &CPU::ADC_C;
+	instructions[0x8A] = &CPU::ADC_D;
+	instructions[0x8B] = &CPU::ADC_E;
+	instructions[0x8C] = &CPU::ADC_H;
+	instructions[0x8D] = &CPU::ADC_L;
+	instructions[0x8E] = &CPU::ADC_HL;
+	instructions[0xCE] = &CPU::ADC_n;
 
 	//Sub
+	instructions[0x97] = &CPU::SUB_A;
 	instructions[0x90] = &CPU::SUB_B;
+	instructions[0x91] = &CPU::SUB_C;
+	instructions[0x92] = &CPU::SUB_D;
+	instructions[0x93] = &CPU::SUB_E;
+	instructions[0x94] = &CPU::SUB_H;
+	instructions[0x95] = &CPU::SUB_L;
+	instructions[0x96] = &CPU::SUB_HL;
+	instructions[0xD6] = &CPU::SUB_n;
 
 	//XORs
 	instructions[0xAF] = &CPU::XOR_A;
@@ -146,9 +233,6 @@ CPU::CPU(){
 	instructions[0x2B] = &CPU::DEC_HL;
 	instructions[0x3B] = &CPU::DEC_SP;
 
-	instructions[0x17] = &CPU::RLA;
-	instructions[0x07] = &CPU::RLCA;
-
 	//Jumps
 	instructions[0x20] = &CPU::JR_NZ;
 	instructions[0x28] = &CPU::JR_Z;
@@ -159,6 +243,10 @@ CPU::CPU(){
 
 	//Stack
 	instructions[0xCD] = &CPU::CALL_nn;
+	instructions[0xC4] = &CPU::CALL_NZ_nn;
+	instructions[0xCC] = &CPU::CALL_Z_nn; 
+	instructions[0xD4] = &CPU::CALL_NC_nn;
+	instructions[0xDC] = &CPU::CALL_C_nn; 
 	instructions[0xC9] = &CPU::RET;
 	instructions[0xC0] = &CPU::RET_NZ;
 	instructions[0xC8] = &CPU::RET_Z;
@@ -241,6 +329,20 @@ CPU::CPU(){
 	instructions_cb[0x7E] = &CPU::BIT_7_HL;
 
 	//Rotates
+	instructions[0x17] = &CPU::RLA;
+	instructions[0x07] = &CPU::RLCA;
+	instructions[0x1F] = &CPU::RRA;
+	instructions[0x0F] = &CPU::RRCA;
+
+	instructions_cb[0x07] = &CPU::RLC_A;
+	instructions_cb[0x00] = &CPU::RLC_B;
+	instructions_cb[0x01] = &CPU::RLC_C;
+	instructions_cb[0x02] = &CPU::RLC_D;
+	instructions_cb[0x03] = &CPU::RLC_E;
+	instructions_cb[0x04] = &CPU::RLC_H;
+	instructions_cb[0x05] = &CPU::RLC_L;
+	instructions_cb[0x06] = &CPU::RLC_HL;
+
 	instructions_cb[0x17] = &CPU::RL_A;
 	instructions_cb[0x10] = &CPU::RL_B;
 	instructions_cb[0x11] = &CPU::RL_C;
@@ -249,6 +351,53 @@ CPU::CPU(){
 	instructions_cb[0x14] = &CPU::RL_H;
 	instructions_cb[0x15] = &CPU::RL_L;
 	instructions_cb[0x16] = &CPU::RL_HL;
+
+	instructions_cb[0x0F] = &CPU::RRC_A;
+	instructions_cb[0x08] = &CPU::RRC_B;
+	instructions_cb[0x09] = &CPU::RRC_C;
+	instructions_cb[0x0A] = &CPU::RRC_D;
+	instructions_cb[0x0B] = &CPU::RRC_E;
+	instructions_cb[0x0C] = &CPU::RRC_H;
+	instructions_cb[0x0D] = &CPU::RRC_L;
+	instructions_cb[0x0E] = &CPU::RRC_HL;
+
+	instructions_cb[0x1F] = &CPU::RR_A;
+	instructions_cb[0x18] = &CPU::RR_B;
+	instructions_cb[0x19] = &CPU::RR_C;
+	instructions_cb[0x1A] = &CPU::RR_D;
+	instructions_cb[0x1B] = &CPU::RR_E;
+	instructions_cb[0x1C] = &CPU::RR_H;
+	instructions_cb[0x1D] = &CPU::RR_L;
+	instructions_cb[0x1E] = &CPU::RR_HL;
+
+	instructions_cb[0x27] = &CPU::SLA_A;
+	instructions_cb[0x20] = &CPU::SLA_B;
+	instructions_cb[0x21] = &CPU::SLA_C;
+	instructions_cb[0x22] = &CPU::SLA_D;
+	instructions_cb[0x23] = &CPU::SLA_E;
+	instructions_cb[0x24] = &CPU::SLA_H;
+	instructions_cb[0x25] = &CPU::SLA_L;
+	instructions_cb[0x26] = &CPU::SLA_HL;
+
+	instructions_cb[0x2F] = &CPU::SRA_A;
+	instructions_cb[0x28] = &CPU::SRA_B;
+	instructions_cb[0x29] = &CPU::SRA_C;
+	instructions_cb[0x2A] = &CPU::SRA_D;
+	instructions_cb[0x2B] = &CPU::SRA_E;
+	instructions_cb[0x2C] = &CPU::SRA_H;
+	instructions_cb[0x2D] = &CPU::SRA_L;
+	instructions_cb[0x2E] = &CPU::SRA_HL;
+
+	instructions_cb[0x3F] = &CPU::SRL_A;
+	instructions_cb[0x38] = &CPU::SRL_B;
+	instructions_cb[0x39] = &CPU::SRL_C;
+	instructions_cb[0x3A] = &CPU::SRL_D;
+	instructions_cb[0x3B] = &CPU::SRL_E;
+	instructions_cb[0x3C] = &CPU::SRL_H;
+	instructions_cb[0x3D] = &CPU::SRL_L;
+	instructions_cb[0x3E] = &CPU::SRL_HL;
+
+	instructions[0xf3] = &CPU::DI;
 }
 
 CPU::~CPU(){
@@ -263,7 +412,11 @@ void CPU::LoadCartridge(){
 
 BYTE CPU::Fetch(){
 	BYTE opcode = this->memory.readByte(this->PC.reg);
-	cout << hex << "0x" << (int)this->PC.reg << endl;
+	// if (this->PC.reg == 0x213) {
+	// 	string hello;
+	// 	cin >> hello;
+	// }
+	cout << hex << "0x" << (int)this->PC.reg << ": ";
 	this->PC.reg = this->PC.reg + 1;
 	return opcode;
 }
@@ -494,6 +647,217 @@ int CPU::LD_A_nn() {
 	return 4;
 }
 
+int CPU::LD_B_B() {
+	this->BC.hi = this->BC.hi;
+	return 4;
+}
+
+int CPU::LD_B_C() {
+	this->BC.hi = this->BC.lo;
+	return 4;
+}
+
+int CPU::LD_B_D() {
+	this->BC.hi = this->DE.hi;
+	return 4;
+}
+
+int CPU::LD_B_E() {
+	this->BC.hi = this->DE.lo;
+	return 4;
+}
+
+int CPU::LD_B_H() {
+	this->BC.hi = this->HL.hi;
+	return 4;
+}
+
+int CPU::LD_B_L() {
+	this->BC.hi = this->HL.lo;
+	return 4;
+}
+
+int CPU::LD_B_HL() {
+	this->BC.hi = this->memory.readByte(this->HL.hi);
+	return 8;
+}
+
+int CPU::LD_C_B() {
+	this->BC.lo = this->BC.hi;
+	return 4;
+}
+
+int CPU::LD_C_C() {
+	this->BC.lo = this->BC.lo;
+	return 4;
+}
+
+int CPU::LD_C_D() {
+	this->BC.lo = this->DE.hi;
+	return 4;
+}
+
+int CPU::LD_C_E() {
+	this->BC.lo = this->DE.lo;
+	return 4;
+}
+
+int CPU::LD_C_H() {
+	this->BC.lo = this->HL.hi;
+	return 4;
+}
+
+int CPU::LD_C_L() {
+	this->BC.lo = this->HL.lo;
+	return 4;
+}
+
+int CPU::LD_C_HL() {
+	this->BC.lo = this->memory.readByte(this->HL.hi);
+	return 8;
+}
+
+int CPU::LD_D_B() {
+	this->DE.hi = this->BC.hi;
+	return 4;
+}
+
+int CPU::LD_D_C() {
+	this->DE.hi = this->BC.lo;
+	return 4;
+}
+
+int CPU::LD_D_D() {
+	this->DE.hi = this->DE.hi;
+	return 4;
+}
+
+int CPU::LD_D_E() {
+	this->DE.hi = this->DE.lo;
+	return 4;
+}
+
+int CPU::LD_D_H() {
+	this->DE.hi = this->HL.hi;
+	return 4;
+}
+
+int CPU::LD_D_L() {
+	this->DE.hi = this->HL.lo;
+	return 4;
+}
+
+int CPU::LD_D_HL() {
+	this->DE.hi = this->memory.readByte(this->HL.hi);
+	return 8;
+}
+
+
+int CPU::LD_E_B() {
+	this->DE.lo = this->BC.hi;
+	return 4;
+}
+
+int CPU::LD_E_C() {
+	this->DE.lo = this->BC.lo;
+	return 4;
+}
+
+int CPU::LD_E_D() {
+	this->DE.lo = this->DE.hi;
+	return 4;
+}
+
+int CPU::LD_E_E() {
+	this->DE.lo = this->DE.lo;
+	return 4;
+}
+
+int CPU::LD_E_H() {
+	this->DE.lo = this->HL.hi;
+	return 4;
+}
+
+int CPU::LD_E_L() {
+	this->DE.lo = this->HL.lo;
+	return 4;
+}
+
+int CPU::LD_E_HL() {
+	this->DE.lo = this->memory.readByte(this->HL.hi);
+	return 8;
+}
+
+int CPU::LD_H_B() {
+	this->HL.hi = this->BC.hi;
+	return 4;
+}
+
+int CPU::LD_H_C() {
+	this->HL.hi = this->BC.lo;
+	return 4;
+}
+
+int CPU::LD_H_D() {
+	this->HL.hi = this->DE.hi;
+	return 4;
+}
+
+int CPU::LD_H_E() {
+	this->HL.hi = this->DE.lo;
+	return 4;
+}
+
+int CPU::LD_H_H() {
+	this->HL.hi = this->HL.hi;
+	return 4;
+}
+
+int CPU::LD_H_L() {
+	this->HL.hi = this->HL.lo;
+	return 4;
+}
+
+int CPU::LD_H_HL() {
+	this->HL.hi = this->memory.readByte(this->HL.hi);
+	return 8;
+}
+
+int CPU::LD_L_B() {
+	this->HL.lo = this->BC.hi;
+	return 4;
+}
+
+int CPU::LD_L_C() {
+	this->HL.lo = this->BC.lo;
+	return 4;
+}
+
+int CPU::LD_L_D() {
+	this->HL.lo = this->DE.hi;
+	return 4;
+}
+
+int CPU::LD_L_E() {
+	this->HL.lo = this->DE.lo;
+	return 4;
+}
+
+int CPU::LD_L_H() {
+	this->HL.lo = this->HL.hi;
+	return 4;
+}
+
+int CPU::LD_L_L() {
+	this->HL.lo = this->HL.lo;
+	return 4;
+}
+
+int CPU::LD_L_HL() {
+	this->HL.lo = this->memory.readByte(this->HL.hi);
+	return 8;
+}
+
 int CPU::LD_B_A() {
 	this->BC.hi = this->AF.hi;
 	//cout << hex << "LD B, A" << endl;
@@ -553,8 +917,46 @@ int CPU::LD_nn_A() {
 int CPU::LD_HL_A() {
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
 	//cout << hex << "LD (HL), A" << endl;
-	return 4;
+	return 8;
 }
+
+int CPU::LD_HL_B() {
+	this->memory.writeByte(this->HL.reg, this->BC.hi);
+	return 8;
+}
+
+int CPU::LD_HL_C() {
+	this->memory.writeByte(this->HL.reg, this->BC.lo);
+	return 8;
+}
+
+int CPU::LD_HL_D() {
+	this->memory.writeByte(this->HL.reg, this->DE.hi);
+	return 8;
+}
+
+int CPU::LD_HL_E() {
+	this->memory.writeByte(this->HL.reg, this->DE.lo);
+	return 8;
+}
+
+int CPU::LD_HL_H() {
+	this->memory.writeByte(this->HL.reg, this->HL.hi);
+	return 8;
+}
+
+int CPU::LD_HL_L() {
+	this->memory.writeByte(this->HL.reg, this->HL.lo);
+	return 8;
+}
+
+int CPU::LD_HL_n() {
+	BYTE value = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	this->memory.writeByte(this->HL.reg, value);
+	return 12;
+}
+
 
 int CPU::LD_FF00_C_A(){
 	WORD address = 0xFF00 + this->BC.lo;
@@ -631,7 +1033,15 @@ int CPU::LD_SP_nn(){
 	this->SP.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
 	//cout << hex << "LD SP, " << "0x" << (int)this->SP.reg << endl;
-	return 4;
+	return 12;
+}
+
+int CPU::LD_nn_SP() {
+	WORD address = this->memory.readWord(this->PC.reg);
+	this->PC.reg+=2;
+	this->memory.writeByte(address, this->SP.lo);
+	this->memory.writeByte(address+1, this->SP.hi);
+	return 20;
 }
 
 //Jump Instructions
@@ -730,8 +1140,49 @@ int CPU::CALL_nn() {
 	PushWord(this->PC.reg);
 	this->PC.reg = immediate;
 	//cout << hex << "CALL 0x" << (int)immediate << endl;
-	return 4;
+	return 12;
 }
+
+int CPU::CALL_NZ_nn() {
+	WORD immediate = this->memory.readWord(this->PC.reg);
+	this->PC.reg++;
+	if (this->flags.z == 0) {
+		PushWord(this->PC.reg);
+		this->PC.reg = immediate;
+	}
+	return 12;
+}
+
+int CPU::CALL_Z_nn() {
+	WORD immediate = this->memory.readWord(this->PC.reg);
+	this->PC.reg++;
+	if (this->flags.z == 1) {
+		PushWord(this->PC.reg);
+		this->PC.reg = immediate;
+	}
+	return 12;
+}
+
+int CPU::CALL_NC_nn() {
+	WORD immediate = this->memory.readWord(this->PC.reg);
+	this->PC.reg++;
+	if (this->flags.c == 0) {
+		PushWord(this->PC.reg);
+		this->PC.reg = immediate;
+	}
+	return 12;
+}
+
+int CPU::CALL_C_nn() {
+	WORD immediate = this->memory.readWord(this->PC.reg);
+	this->PC.reg++;
+	if (this->flags.c == 1) {
+		PushWord(this->PC.reg);
+		this->PC.reg = immediate;
+	}
+	return 12;
+}
+
 
 int CPU::RET() {
 	this->PC.reg = PopWord();
@@ -814,9 +1265,10 @@ int CPU::POP_HL() {
 	return 4;
 }
 
-BYTE CPU::Add(BYTE operand1, BYTE operand2) {
-	bool setHalfCarry = ((operand1 & 0x0F) + (operand2 & 0x0F) > 0x0F);
-	BYTE sum = operand1 + operand2;
+BYTE CPU::Add(BYTE operand1, BYTE operand2, bool addCarryFlag) {
+	BYTE carry = (addCarryFlag) ? this->flags.c : 0;
+	bool setHalfCarry = ((operand1 & 0x0F) + ((operand2 + carry) & 0x0F) > 0x0F);
+	BYTE sum = operand1 + operand2 + carry;
 
 	if (sum == 0) {
 		this->flags.z = 1;
@@ -844,15 +1296,106 @@ BYTE CPU::Add(BYTE operand1, BYTE operand2) {
 	return sum;
 }
 
+int CPU::ADD_A() {
+	this->AF.hi = Add(this->AF.hi, this->AF.hi);
+	return 4;
+}
+
+int CPU::ADD_B() {
+	this->AF.hi = Add(this->AF.hi, this->BC.hi);
+	return 4;
+}
+
+int CPU::ADD_C() {
+	this->AF.hi = Add(this->AF.hi, this->BC.lo);
+	return 4;
+}
+
+int CPU::ADD_D() {
+	this->AF.hi = Add(this->AF.hi, this->DE.hi);
+	return 4;
+}
+
+int CPU::ADD_E() {
+	this->AF.hi = Add(this->AF.hi, this->DE.lo);
+	return 4;
+}
+
+int CPU::ADD_H() {
+	this->AF.hi = Add(this->AF.hi, this->HL.hi);
+	return 4;
+}
+
+int CPU::ADD_L() {
+	this->AF.hi = Add(this->AF.hi, this->HL.lo);
+	return 4;
+}
+
 int CPU::ADD_HL() {
 	BYTE value = this->memory.readByte(this->HL.reg);
 	this->AF.hi = Add(this->AF.hi, value);
 	return 8;
 }
 
+int CPU::ADD_n() {
+	BYTE value = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	this->AF.hi = Add(this->AF.hi, value);
+	return 8;
+}
+
+int CPU::ADC_A() {
+	this->AF.hi = Add(this->AF.hi, this->AF.hi, true);
+	return 4;
+}
+
+int CPU::ADC_B() {
+	this->AF.hi = Add(this->AF.hi, this->BC.hi, true);
+	return 4;
+}
+
+int CPU::ADC_C() {
+	this->AF.hi = Add(this->AF.hi, this->BC.lo, true);
+	return 4;
+}
+
+int CPU::ADC_D() {
+	this->AF.hi = Add(this->AF.hi, this->DE.hi, true);
+	return 4;
+}
+
+int CPU::ADC_E() {
+	this->AF.hi = Add(this->AF.hi, this->DE.lo, true);
+	return 4;
+}
+
+int CPU::ADC_H() {
+	this->AF.hi = Add(this->AF.hi, this->HL.hi, true);
+	return 4;
+}
+
+int CPU::ADC_L() {
+	this->AF.hi = Add(this->AF.hi, this->HL.lo, true);
+	return 4;
+}
+
+int CPU::ADC_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	this->AF.hi = Add(this->AF.hi, value, true);
+	return 8;
+}
+
+int CPU::ADC_n() {
+	BYTE value = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	this->AF.hi = Add(this->AF.hi, value, true);
+	return 8;	
+}
+
 //Math instructions
 BYTE CPU::Subtract(BYTE from, BYTE sub) {
 	bool setHalfCarry = ((int)(from & 0x0F) - (int)(sub & 0x0F) < 0x00);
+	this->flags.c = (sub > from);
 	from = from - sub;
 
 	if (from == 0) {
@@ -870,9 +1413,14 @@ BYTE CPU::Subtract(BYTE from, BYTE sub) {
 	else {
 		this->flags.h = 1;
 	}
-	this->flags.c = 0;
+	
 
 	return from;
+}
+
+int CPU::SUB_A() {
+	this->AF.hi = Subtract(this->AF.hi, this->AF.hi);
+	return 4;
 }
 
 int CPU::SUB_B() {
@@ -880,6 +1428,44 @@ int CPU::SUB_B() {
 	//cout << "B: " << (int)this->BC.hi << endl;
 	return 4;
 }
+
+int CPU::SUB_C() {
+	this->AF.hi = Subtract(this->AF.hi, this->BC.lo);
+	return 4;
+}
+
+int CPU::SUB_D() {
+	this->AF.hi = Subtract(this->AF.hi, this->DE.hi);
+	return 4;
+}
+
+int CPU::SUB_E() {
+	this->AF.hi = Subtract(this->AF.hi, this->DE.lo);
+	return 4;
+}
+
+int CPU::SUB_H() {
+	this->AF.hi = Subtract(this->AF.hi, this->HL.hi);
+	return 4;
+}
+
+int CPU::SUB_L() {
+	this->AF.hi = Subtract(this->AF.hi, this->HL.lo);
+	return 4;
+}
+
+int CPU::SUB_HL() {
+	this->AF.hi = Subtract(this->AF.hi, this->memory.readByte(this->HL.hi));
+	return 8;
+}
+
+int CPU::SUB_n() {
+	BYTE value = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	this->AF.hi = Subtract(this->AF.hi, value);
+	return 8;
+}
+
 
 BYTE CPU::XOR(BYTE operand1, BYTE operand2) {
 	BYTE retVal = operand1 ^ operand2;
@@ -1787,56 +2373,108 @@ BYTE CPU::Rotate(BYTE value, Direction direction, bool fromC) {
 	return value;
 }
 
+int CPU::RLC_A() {
+	this->AF.hi = Rotate(this->AF.hi, Direction::left, false);
+	return 8;
+}
+
+int CPU::RLC_B() {
+	this->BC.hi = Rotate(this->BC.hi, Direction::left, false);
+	return 8;
+}
+
+int CPU::RLC_C() {
+	this->BC.lo = Rotate(this->BC.lo, Direction::left, false);
+	return 8;
+}
+
+int CPU::RLC_D() {
+	this->DE.hi = Rotate(this->DE.hi, Direction::left, false);
+	return 8;
+}
+
+int CPU::RLC_E() {
+	this->DE.lo = Rotate(this->DE.lo, Direction::left, false);
+	return 8;
+}
+
+int CPU::RLC_H() {
+	this->HL.hi = Rotate(this->HL.hi, Direction::left, false);
+	return 8;
+}
+
+int CPU::RLC_L() {
+	this->HL.lo = Rotate(this->HL.lo, Direction::left, false);
+	return 8;
+}
+
+int CPU::RLC_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = Rotate(value, Direction::left, false);
+	this->memory.writeByte(this->HL.reg, value);
+	return 16;
+}
+
 int CPU::RLA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left);
-	return 4;
+	return 8;
 }
 
 int CPU::RLCA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left, false);
+	return 8;
+}
+
+int CPU::RRA() {
+	this->AF.hi = Rotate(this->AF.hi, Direction::right);
+	return 4;
+}
+
+int CPU::RRCA() {
+	this->AF.hi = Rotate(this->AF.hi, Direction::right, false);
 	return 4;
 }
 
 int CPU::RL_A() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left);
 //	cout << hex << "RL A" << endl;
-	return 4;
+	return 8;
 }
 
 int CPU::RL_B() {
 	this->BC.hi = Rotate(this->BC.hi, Direction::left);
 //	cout << hex << "RL B" << endl;
-	return 4;
+	return 8;
 }
 
 int CPU::RL_C() {
 	this->BC.lo = Rotate(this->BC.lo, Direction::left);
 	//cout << hex << "RL C" << endl;
-	return 4;
+	return 8;
 }
 
 int CPU::RL_D() {
 	this->DE.hi = Rotate(this->DE.hi, Direction::left);
 //	cout << hex << "RL D" << endl;
-	return 4;
+	return 8;
 }
 
 int CPU::RL_E() {
 	this->DE.lo = Rotate(this->DE.lo, Direction::left);
 //	cout << hex << "RL E" << endl;
-	return 4;
+	return 8;
 }
 
 int CPU::RL_H() {
 	this->HL.hi = Rotate(this->HL.hi, Direction::left);
 //	cout << hex << "RL H" << endl;
-	return 4;
+	return 8;
 }
 
 int CPU::RL_L() {
 	this->HL.lo = Rotate(this->HL.lo, Direction::left);
 //	cout << hex << "RL L" << endl;
-	return 4;
+	return 8;
 }
 
 int CPU::RL_HL() {
@@ -1844,6 +2482,249 @@ int CPU::RL_HL() {
 	value = Rotate(value, Direction::left);
 	this->memory.writeByte(this->HL.reg, value);
 //	cout << hex << "RL (HL)" << endl;
+	return 16;
+}
+
+int CPU::RRC_A() {
+	this->AF.hi = Rotate(this->AF.hi, Direction::right, false);
+	return 8;
+}
+
+int CPU::RRC_B() {
+	this->BC.hi = Rotate(this->BC.hi, Direction::right, false);
+	return 8;
+}
+
+int CPU::RRC_C() {
+	this->BC.lo = Rotate(this->BC.lo, Direction::right, false);
+	return 8;
+}
+
+int CPU::RRC_D() {
+	this->DE.hi = Rotate(this->DE.hi, Direction::right, false);
+	return 8;
+}
+
+int CPU::RRC_E() {
+	this->DE.lo = Rotate(this->DE.lo, Direction::right, false);
+	return 8;
+}
+
+int CPU::RRC_H() {
+	this->HL.hi = Rotate(this->HL.hi, Direction::right, false);
+	return 8;
+}
+
+int CPU::RRC_L() {
+	this->HL.lo = Rotate(this->HL.lo, Direction::right, false);
+	return 8;
+}
+
+int CPU::RRC_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = Rotate(value, Direction::right, false);
+	this->memory.writeByte(this->HL.reg, value);
+	return 16;
+}
+
+int CPU::RR_A() {
+	this->AF.hi = Rotate(this->AF.hi, Direction::right);
+	return 8;
+}
+
+int CPU::RR_B() {
+	this->BC.hi = Rotate(this->BC.hi, Direction::right);
+	return 8;
+}
+
+int CPU::RR_C() {
+	this->BC.lo = Rotate(this->BC.lo, Direction::right);
+	return 8;
+}
+
+int CPU::RR_D() {
+	this->DE.hi = Rotate(this->DE.hi, Direction::right);
+	return 8;
+}
+
+int CPU::RR_E() {
+	this->DE.lo = Rotate(this->DE.lo, Direction::right);
+	return 8;
+}
+
+int CPU::RR_H() {
+	this->HL.hi = Rotate(this->HL.hi, Direction::right);
+	return 8;
+}
+
+int CPU::RR_L() {
+	this->HL.lo = Rotate(this->HL.lo, Direction::right);
+	return 8;
+}
+
+int CPU::RR_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = Rotate(value, Direction::right);
+	this->memory.writeByte(this->HL.reg, value);
+	return 16;
+}
+
+BYTE CPU::Shift(BYTE value, Direction direction, bool resetSB) {
+	if (direction == Direction::right) {
+		BYTE carry = value & BIT0;
+		BYTE bit7 = (value & BIT7) >> 7;
+		value = value >> 1;
+		value |= (resetSB) ? 0: bit7;
+		this->flags.c = carry;
+	}
+	else {
+		BYTE carry = (value & BIT7) >> 7;
+		BYTE bit0 = (value & BIT0);
+		value = value << 1;
+		value |= (resetSB) ? 0: bit0;
+		this->flags.c = carry;
+	}
+
+	if (value == 0) {
+		this->flags.z = 1;
+	}
+	else {
+		this->flags.z = 0;
+	}
+
+	this->flags.n = 0;
+	this->flags.h = 0;
+
+	return value;
+}
+
+int CPU::SLA_A() {
+	this->AF.hi = Shift(this->AF.hi, Direction::left);
+	return 8;
+}
+
+int CPU::SLA_B() {
+	this->BC.hi = Shift(this->BC.hi, Direction::left);
+	return 8;
+}
+
+int CPU::SLA_C() {
+	this->BC.lo = Shift(this->BC.lo, Direction::left);
+	return 8;
+}
+
+int CPU::SLA_D() {
+	this->DE.hi = Shift(this->DE.hi, Direction::left);
+	return 8;
+}
+
+int CPU::SLA_E() {
+	this->DE.lo = Shift(this->DE.lo, Direction::left);
+	return 8;
+}
+
+int CPU::SLA_H() {
+	this->HL.hi = Shift(this->HL.hi, Direction::left);
+	return 8;
+}
+
+int CPU::SLA_L() {
+	this->HL.lo = Shift(this->HL.lo, Direction::left);
+	return 8;
+}
+
+int CPU::SLA_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = Shift(value, Direction::left);
+	this->memory.writeByte(this->HL.reg, value);
+	return 16;
+}
+
+int CPU::SRA_A() {
+	this->AF.hi = Shift(this->AF.hi, Direction::right, false);
+	return 8;
+}
+
+int CPU::SRA_B() {
+	this->BC.hi = Shift(this->BC.hi, Direction::right, false);
+	return 8;
+}
+
+int CPU::SRA_C() {
+	this->BC.lo = Shift(this->BC.lo, Direction::right, false);
+	return 8;
+}
+
+int CPU::SRA_D() {
+	this->DE.hi = Shift(this->DE.hi, Direction::right, false);
+	return 8;
+}
+
+int CPU::SRA_E() {
+	this->DE.lo = Shift(this->DE.lo, Direction::right, false);
+	return 8;
+}
+
+int CPU::SRA_H() {
+	this->HL.hi = Shift(this->HL.hi, Direction::right, false);
+	return 8;
+}
+
+int CPU::SRA_L() {
+	this->HL.lo = Shift(this->HL.lo, Direction::right, false);
+	return 8;
+}
+
+int CPU::SRA_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = Shift(value, Direction::right, false);
+	this->memory.writeByte(this->HL.reg, value);
+	return 16;
+}
+
+int CPU::SRL_A() {
+	this->AF.hi = Shift(this->AF.hi, Direction::right);
+	return 8;
+}
+
+int CPU::SRL_B() {
+	this->BC.hi = Shift(this->BC.hi, Direction::right);
+	return 8;
+}
+
+int CPU::SRL_C() {
+	this->BC.lo = Shift(this->BC.lo, Direction::right);
+	return 8;
+}
+
+int CPU::SRL_D() {
+	this->DE.hi = Shift(this->DE.hi, Direction::right);
+	return 8;
+}
+
+int CPU::SRL_E() {
+	this->DE.lo = Shift(this->DE.lo, Direction::right);
+	return 8;
+}
+
+int CPU::SRL_H() {
+	this->HL.hi = Shift(this->HL.hi, Direction::right);
+	return 8;
+}
+
+int CPU::SRL_L() {
+	this->HL.lo = Shift(this->HL.lo, Direction::right);
+	return 8;
+}
+
+int CPU::SRL_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = Shift(value, Direction::right);
+	this->memory.writeByte(this->HL.reg, value);
+	return 16;
+}
+
+int CPU::DI() {
 	return 4;
 }
 

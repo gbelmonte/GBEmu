@@ -27,7 +27,7 @@ Memory::Memory(){
 	this->Rom[0xFF24] = 0x77;
 	this->Rom[0xFF25] = 0xF3;
 	this->Rom[0xFF26] = 0xF1;
-	//this->Rom[0xFF40] = 0x91;
+	this->Rom[0xFF40] = 0x91;
 	this->Rom[0xFF42] = 0x00;
 	this->Rom[0xFF43] = 0x00;
 	this->Rom[0xFF45] = 0x00;
@@ -50,6 +50,7 @@ BYTE Memory::readByte(WORD address) {
 
 	//Read Rom Bank
 	if(address >= 0x4000 && address < 0x8000){
+		//cout << hex << "ROM bank: " << (int)this->RomBank << endl;
 		WORD romAddress = address - 0x4000;
 		retVal = this->Cartridge[romAddress + (this->RomBank * 0x4000)];
 	}
@@ -99,6 +100,7 @@ void Memory::writeByte(WORD address, BYTE value) {
 		//Change RAM Bank Number
 		if(address >= 0x4000 && address <= 0x5FFF) {
 			if (this->RomMode) {
+				//cout << hex << "value:" << (int)value << "bank: " << (int)this->RomBank << endl;
 				this->RomBank &= 0x1F;
 				BYTE bank = value & 0xE0;
 				this->RomBank |= bank;
@@ -108,7 +110,7 @@ void Memory::writeByte(WORD address, BYTE value) {
 				}
 			}
 			else {
-				this->RamBank = value & 0x3;
+				this->RamBank = value & 0x03;
 			}
 		}
 		//Change ROM/RAM Mode
