@@ -34,6 +34,8 @@ class CPU{
 		GPU gpu;
 		BYTE cycleCounter;
 
+		bool debug;
+
 
 		int (CPU::*instructions[300])();
 		int (CPU::*instructions_cb[300])();

@@ -53,11 +53,13 @@ BYTE Memory::readByte(WORD address) {
 		//cout << hex << "ROM bank: " << (int)this->RomBank << endl;
 		WORD romAddress = address - 0x4000;
 		retVal = this->Cartridge[romAddress + (this->RomBank * 0x4000)];
+		cout << hex << "address: " << (int)address << " RomBank: " << (int)this->RomBank << " Value: " << (int)retVal << endl;
 	}
 	//Read Ram Bank
 	else if (address >= 0xA000 && address < 0xC000) {
 		WORD ramAddress = address = 0xA000;
 		retVal = this->Ram[ramAddress + (this->RamBank * 0x2000)];
+		cout << hex << "RAM HIT: address: " << (int)address << " RamBank: " << (int)this->RamBank << " Value: " << (int)retVal << endl;
 	}
 	else {
 		retVal = this->Rom[address];
@@ -158,25 +160,28 @@ void Memory::writeWord(WORD address, WORD value) {
 bool Memory::LoadCartridge(){
 	size_t result;
 
-	FILE * pFile = fopen("cpu_instrs.gb", "rb");
+	FILE * pFile = fopen("ld_r_r.gb", "rb");
 	if (pFile == NULL) {
 		return false;
 	}
 	result = fread(this->Cartridge, 1, 200000, pFile);
 
-	// pFile = fopen("cpu_instrs.gb", "rb");
+	// pFile = fopen("DrMario.gb", "rb");
 	// BYTE game[0x200000];
 
 	// result = fread(game, 1, 200000, pFile);
 	// memcpy(Cartridge + 0x100, game + 0x100, (200000 - 0x100) * sizeof(BYTE));
 	//Copy cartridge to rom bank 0
-	memcpy(Rom, Cartridge, 0x4000 * sizeof(BYTE));
+	memcpy(this->Rom, this->Cartridge, 0x4000 * sizeof(BYTE));
 
 	switch (this->Cartridge[0x147]) {
 		case 0: this->type = CartridgeType::Rom; cout<<"ROM"; break;
 		case 1: this->type = CartridgeType::Rom_MBC1; cout<<"ROM+MBC1"; break;
 		default: cout << "Catridge type not implemented: " << this->Cartridge[0x147] << endl;
 	}
+
+	string hello;
+	cin >> hello;
 
 	return true;
 }

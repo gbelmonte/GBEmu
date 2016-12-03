@@ -1,6 +1,8 @@
 #include "CPU.hpp"
 
 CPU::CPU(){
+
+	this->debug = false;
 	//Init Registers
 	this->SP.reg = 0xFFFE;
 	this->PC.reg = 0x100;
@@ -412,11 +414,11 @@ void CPU::LoadCartridge(){
 
 BYTE CPU::Fetch(){
 	BYTE opcode = this->memory.readByte(this->PC.reg);
-	// if (this->PC.reg == 0x213) {
-	// 	string hello;
-	// 	cin >> hello;
-	// }
-	cout << hex << "0x" << (int)this->PC.reg << ": ";
+	if (this->PC.reg > 0xc000 && debug) {
+		string hello;
+		cin >> hello;
+	}
+	//cout << hex << "0x" << (int)this->PC.reg << ": ";
 	this->PC.reg = this->PC.reg + 1;
 	return opcode;
 }
@@ -466,16 +468,17 @@ void CPU::UpdateScreen(int cycles) {
 			else if((line > 144) && (line <= 153)) {
 				//in V-Blank
 			}
-			else if (line > 153) {
-				//reset Y scanline
-				this->memory.writeByte(0xFF44, 0);
-			}
 			else {
 				DrawLine();
 			}
 
 			line++;
-			this->memory.writeByte(0xFF44, line);
+			if (line > 153) {
+				this->memory.writeByte(0xFF44, 0);
+			}
+			else {
+				this->memory.writeByte(0xFF44, line);
+			}
 		}
 	}
 }
@@ -611,13 +614,13 @@ int CPU::LD_A_E() {
 
 int CPU::LD_A_H() {
 	this->AF.hi = this->HL.hi;
-	//cout << hex << "LD A, H" << endl;
+	//cout << hex << "LD A, H (" <<(int)this->HL.hi << ")" << endl;
 	return 4;
 }
 
 int CPU::LD_A_L() {
 	this->AF.hi = this->HL.lo;
-	//cout << hex << "LD A, L" << endl;
+	//cout << hex << "LD A, L (" << (int)this->HL.lo << ")" << endl;
 	return 4;
 }
 
@@ -629,7 +632,7 @@ int CPU::LD_A_BC() {
 
 int CPU::LD_A_DE() {
 	this->AF.hi = this->memory.readByte(this->DE.reg);
-	//cout << hex << "LD A, (DE)" << endl;
+	//cout << hex << "LD A, (DE); A = " << (int)this->AF.hi << " DE = " << (int)this->DE.reg << endl;
 	return 4;
 }
 
@@ -902,7 +905,7 @@ int CPU::LD_BC_A() {
 
 int CPU::LD_DE_A() {
 	this->memory.writeByte(this->DE.reg, this->AF.hi);
-	//cout << hex << "LD (DE), A" << endl;
+	//cout << hex << "LD (DE= "<< (int)this->DE.reg <<"), A" << endl;
 	return 4;
 }
 
@@ -910,7 +913,7 @@ int CPU::LD_nn_A() {
 	WORD immediate = this->memory.readWord(this->PC.reg);
 	this->PC.reg+=2;
 	this->memory.writeByte(immediate, this->AF.hi);
-	//cout << hex << "LD (0x" << (int)immediate << "), A" << endl;
+	//cout << hex << "LD (0x" << (int)immediate << "), A (" << (int)this->AF.hi <<")" << endl;
 	return 4;
 }
 
@@ -970,7 +973,7 @@ int CPU::LD_FF00_n_A(){
 	this->PC.reg++;
 	WORD address = 0xFF00 + immediate;
 	this->memory.writeByte(address, this->AF.hi);
-	//cout << hex << "LD ($FF00 + 0x" << (int)immediate << "), A" << endl;
+	//cout << hex << "LD ($FF00 + 0x" << (int)immediate << "), A (" << (int)this->AF.hi <<")" << endl;
 	return 4;
 }
 
@@ -979,7 +982,7 @@ int CPU::LDH_A_FF00_n() {
 	this->PC.reg++;
 	WORD address = 0xFF00 + immediate;
 	this->AF.hi = this->memory.readByte(address);
-	//cout << hex << "LD A, ($FF00 + 0x" << (int)immediate << ")" << endl;
+	//cout << hex << "LD A, ($FF00 + 0x" << (int)immediate << ") A = " << (int)this->AF.hi << endl;
 	return 4;
 }
 
@@ -1001,6 +1004,7 @@ int CPU::LDI_HL_A(){
 int CPU::LDI_A_HL() {
 	this->AF.hi = this->memory.readByte(this->HL.reg);
 	this->HL.reg++;
+	//cout << hex << "LDI A ("<<(int)this->AF.hi<< "), (HL) = " << (int)this->HL.reg << endl;
 	return 8;
 }
 
@@ -1062,7 +1066,7 @@ int CPU::JR_Z() {
 	//cout << hex << "JR Z, " << (int)offset << endl;
 	if (this->flags.z == 1) {
 		this->PC.reg += offset;
-	//	cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		//cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
 	return 4;
 }
@@ -1100,7 +1104,7 @@ int CPU::JR() {
 
 int CPU::JP_nn() {
 	WORD address = this->memory.readWord(this->PC.reg);
-	cout << hex << "Jump to: 0x" << address << endl;
+	//cout << hex << "Jump to: 0x" << address << endl;
 	this->PC.reg = address;
 	return 12;
 }
@@ -1123,7 +1127,7 @@ WORD CPU::PopWord() {
 void CPU::PushByte(BYTE value) {
 	this->SP.reg--;
 	this->memory.writeByte(this->SP.reg, value);
-	//cout << hex << "PUSH SP: 0x" << (int)this->SP.reg << endl;
+	//cout << hex << "PUSH SP: 0x" << (int)this->SP.reg << " value:" << (int)value << endl;
 }
 
 BYTE CPU::PopByte() {
@@ -1136,7 +1140,7 @@ BYTE CPU::PopByte() {
 
 int CPU::CALL_nn() {
 	WORD immediate = this->memory.readWord(this->PC.reg);
-	this->PC.reg++;
+	this->PC.reg+=2;
 	PushWord(this->PC.reg);
 	this->PC.reg = immediate;
 	//cout << hex << "CALL 0x" << (int)immediate << endl;
@@ -1619,7 +1623,9 @@ int CPU::OR_B() {
 }
 
 int CPU::OR_C() {
+	//cout << hex << "OR C; A = " << (int)this->AF.hi << " C = " << (int)this->BC.lo <<endl;
 	this->AF.hi = OR(this->AF.hi, this->BC.lo);
+	//cout << hex << "A = " << (int)this->AF.hi << endl;
 	return 4;
 }
 
@@ -1728,7 +1734,7 @@ int CPU::CP_n() {
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
 	Compare(immediate);
-	//cout << hex << "CP 0x" << (int)immediate << endl;
+	//cout << hex << "CP 0x" << (int)immediate << " A = " << (int)this->AF.hi << endl;
 	return 4;
 }
 
@@ -1769,7 +1775,7 @@ int CPU::INC_B() {
 
 int CPU::INC_C() {
 	this->BC.lo = RegInc(this->BC.lo);
-	//cout << hex << "INC C" << endl;
+	//cout << hex << "INC C = " << (int)this->BC.lo << endl;
 	return 4;
 }
 
@@ -1781,7 +1787,7 @@ int CPU::INC_D() {
 
 int CPU::INC_E() {
 	this->DE.lo = RegInc(this->DE.lo);
-	//cout << hex << "INC E" << endl;
+	//cout << hex << "INC E: " << (int)this->DE.lo << endl;
 	return 4;
 }
 
@@ -1807,7 +1813,7 @@ int CPU::INC_MEM_HL() {
 
 int CPU::INC_BC() {
 	this->BC.reg++;
-//	cout << hex << "INC BC" << endl;
+	//cout << hex << "INC BC = " << (int)this->BC.reg << endl;
 	return 4;
 }
 
@@ -1862,7 +1868,6 @@ int CPU::DEC_B() {
 
 int CPU::DEC_C() {
 	this->BC.lo = RegDec(this->BC.lo);
-	//cout << hex << "DEC C" << endl;
 	return 4;
 }
 

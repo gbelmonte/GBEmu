@@ -11,7 +11,7 @@ int main(int argc, char** argv){
 
 		//Fetch
 		BYTE opcode = cpu.Fetch();
-		cout << hex << "0x" << (int)opcode << endl;
+		//cout << hex << "0x" << (int)opcode << endl;
 
 		//DecodeExecute
 		int cycles = cpu.DecodeExecute(opcode);
