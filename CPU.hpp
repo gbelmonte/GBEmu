@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <string.h>
 #include "common.hpp"
 #include "memory.hpp"
 #include "gpu.hpp"
+#include "logger.hpp"
 
 using namespace std;
 
@@ -32,7 +34,7 @@ class CPU{
 
 		Memory memory;
 		GPU gpu;
-		BYTE cycleCounter;
+		int cycleCounter;
 
 		bool debug;
 
@@ -163,6 +165,12 @@ class CPU{
 		int ADD_HL();
 		int ADD_n();
 
+		WORD Add16Bit(WORD operand1, WORD operand2);
+		int ADD_HL_BC();
+		int ADD_HL_DE();
+		int ADD_HL_HL();
+		int ADD_HL_SP();
+
 		int ADC_A();
 		int ADC_B();
 		int ADC_C();
@@ -240,10 +248,13 @@ class CPU{
 		int JR_C();
 		int JR();
 		int JP_nn();
+		int JP_HL();
 
 		//Stack instructions
 		void PushWord(WORD value);
+		void PushReg(WORD reg);
 		WORD PopWord();
+		WORD PopReg();
 		void PushByte(BYTE value);
 		BYTE PopByte();
 

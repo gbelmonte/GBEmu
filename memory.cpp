@@ -53,13 +53,13 @@ BYTE Memory::readByte(WORD address) {
 		//cout << hex << "ROM bank: " << (int)this->RomBank << endl;
 		WORD romAddress = address - 0x4000;
 		retVal = this->Cartridge[romAddress + (this->RomBank * 0x4000)];
-		cout << hex << "address: " << (int)address << " RomBank: " << (int)this->RomBank << " Value: " << (int)retVal << endl;
+		//cout << hex << "address: " << (int)address << " RomBank: " << (int)this->RomBank << " Value: " << (int)retVal << endl;
 	}
 	//Read Ram Bank
 	else if (address >= 0xA000 && address < 0xC000) {
 		WORD ramAddress = address = 0xA000;
 		retVal = this->Ram[ramAddress + (this->RamBank * 0x2000)];
-		cout << hex << "RAM HIT: address: " << (int)address << " RamBank: " << (int)this->RamBank << " Value: " << (int)retVal << endl;
+		//cout << hex << "RAM HIT: address: " << (int)address << " RamBank: " << (int)this->RamBank << " Value: " << (int)retVal << endl;
 	}
 	else {
 		retVal = this->Rom[address];
@@ -179,9 +179,6 @@ bool Memory::LoadCartridge(){
 		case 1: this->type = CartridgeType::Rom_MBC1; cout<<"ROM+MBC1"; break;
 		default: cout << "Catridge type not implemented: " << this->Cartridge[0x147] << endl;
 	}
-
-	string hello;
-	cin >> hello;
 
 	return true;
 }
