@@ -25,6 +25,7 @@ CPU::CPU(){
 	}
 
 	instructions[0x00] = &CPU::NOP;
+	instructions[0x10] = &CPU::STOP;
 
 	instructions[0x3e] = &CPU::LD_A_n;
 	instructions[0x06] = &CPU::LD_B_n;
@@ -532,6 +533,11 @@ void CPU::DrawLine() {
 
 bool CPU::CheckInput(){
 	return this->gpu.CheckInput();
+}
+
+int CPU::STOP() {
+	this->PC.reg++;
+	return 4;
 }
 
 //instructions
@@ -1171,7 +1177,7 @@ int CPU::JP_nn() {
 
 int CPU::JP_HL() {
 	Logger::LogInstruction("JP", "HL", "");
-	this->PC.reg = this->memory.readWord(this->HL.reg);
+	this->PC.reg = this->HL.reg;
 	return 4;
 }
 

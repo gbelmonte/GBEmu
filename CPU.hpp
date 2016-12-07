@@ -46,6 +46,7 @@ class CPU{
 
 		//instructions
 		int NOP() {};
+		int STOP();
 
 		//load immediates
 		int LD_A_n();
