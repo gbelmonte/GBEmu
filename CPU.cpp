@@ -540,7 +540,7 @@ int CPU::LD_A_n(){
 	this->PC.reg++;
 	Logger::LogInstruction("LD", "A", "immediate");
 	this->AF.hi = immediate;
-	return 4;
+	return 8;
 }
 
 int CPU::LD_B_n(){
@@ -548,7 +548,7 @@ int CPU::LD_B_n(){
 	this->PC.reg++;
 	Logger::LogInstruction("LD", "B", "immediate");
 	this->BC.hi = immediate;
-	return 4;
+	return 8;
 } 
 
 int CPU::LD_C_n(){
@@ -556,7 +556,7 @@ int CPU::LD_C_n(){
 	this->PC.reg++;
 	Logger::LogInstruction("LD", "C", "immediate");
 	this->BC.lo = immediate;
-	return 4;
+	return 8;
 }
 
 int CPU::LD_D_n(){
@@ -564,7 +564,7 @@ int CPU::LD_D_n(){
 	this->PC.reg++;
 	Logger::LogInstruction("LD", "D", "immediate");
 	this->DE.hi = immediate;
-	return 4;
+	return 8;
 } 
 
 int CPU::LD_E_n(){
@@ -572,7 +572,7 @@ int CPU::LD_E_n(){
 	this->PC.reg++;
 	Logger::LogInstruction("LD", "E", "immediate");
 	this->DE.lo = immediate;
-	return 4;
+	return 8;
 }
 
 int CPU::LD_H_n(){
@@ -580,7 +580,7 @@ int CPU::LD_H_n(){
 	this->PC.reg++;
 	Logger::LogInstruction("LD", "H", "immediate");
 	this->HL.hi = immediate;
-	return 4;
+	return 8;
 } 
 
 int CPU::LD_L_n(){
@@ -588,7 +588,7 @@ int CPU::LD_L_n(){
 	this->PC.reg++;
 	Logger::LogInstruction("LD", "L", "immediate");
 	this->HL.lo = immediate;
-	return 4;
+	return 8;
 }
 
 int CPU::LD_A_A() {
@@ -636,19 +636,19 @@ int CPU::LD_A_L() {
 int CPU::LD_A_BC() {
 	this->AF.hi = this->memory.readByte(this->BC.reg);
 	Logger::LogInstruction("LD", "A", "(BC)");
-	return 4;
+	return 8;
 }
 
 int CPU::LD_A_DE() {
 	this->AF.hi = this->memory.readByte(this->DE.reg);
 	Logger::LogInstruction("LD", "A", "(DE)");
-	return 4;
+	return 8;
 }
 
 int CPU::LD_A_HL() {
 	this->AF.hi = this->memory.readByte(this->HL.reg);
 	Logger::LogInstruction("LD", "A", "(HL)");
-	return 4;
+	return 8;
 }
 
 int CPU::LD_A_nn() {
@@ -951,13 +951,13 @@ int CPU::LD_L_A() {
 int CPU::LD_BC_A() {
 	this->memory.writeByte(this->BC.reg, this->AF.hi);
 	Logger::LogInstruction("LD", "(BC)", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::LD_DE_A() {
 	this->memory.writeByte(this->DE.reg, this->AF.hi);
 	Logger::LogInstruction("LD", "(DE)", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::LD_nn_A() {
@@ -965,7 +965,7 @@ int CPU::LD_nn_A() {
 	this->PC.reg+=2;
 	this->memory.writeByte(immediate, this->AF.hi);
 	Logger::LogInstruction("LD", "(nn)", "A");
-	return 4;
+	return 16;
 }
 
 int CPU::LD_HL_A() {
@@ -1023,7 +1023,7 @@ int CPU::LD_FF00_C_A(){
 	WORD address = 0xFF00 + this->BC.lo;
 	this->memory.writeByte(address, this->AF.hi);
 	Logger::LogInstruction("LD", "($FF00 + C)", "A");
-	return 12;
+	return 8;
 }
 
 int CPU::LD_FF00_n_A(){
@@ -1048,14 +1048,14 @@ int CPU::LDD_HL_A(){
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
 	this->HL.reg--;
 	Logger::LogInstruction("LDD", "(HL)", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::LDI_HL_A(){
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
 	this->HL.reg++;
 	Logger::LogInstruction("LDI", "HL", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::LDI_A_HL() {
@@ -1075,21 +1075,21 @@ int CPU::LD_BC_nn(){
 	this->BC.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
 	Logger::LogInstruction("LD", "BC", "nn");
-	return 4;
+	return 12;
 }
 
 int CPU::LD_DE_nn(){
 	this->DE.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
 	Logger::LogInstruction("LD", "DE", "nn");
-	return 4;
+	return 12;
 }
 
 int CPU::LD_HL_nn(){
 	this->HL.reg = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
 	Logger::LogInstruction("LD", "HL", "nn");
-	return 8;
+	return 12;
 }
 
 int CPU::LD_SP_nn(){
@@ -1323,49 +1323,49 @@ int CPU::RET_C() {
 int CPU::PUSH_AF() {
 	PushReg(this->AF.reg);
 	Logger::LogInstruction("PUSH", "AF", "");
-	return 4;
+	return 16;
 }
 
 int CPU::PUSH_BC() {
 	PushReg(this->BC.reg);
 	Logger::LogInstruction("PUSH", "BC", "");
-	return 4;
+	return 16;
 }
 
 int CPU::PUSH_DE() {
 	PushReg(this->DE.reg);
 	Logger::LogInstruction("PUSH", "DE", "");
-	return 4;
+	return 16;
 }
 
 int CPU::PUSH_HL() {
 	PushReg(this->HL.reg);
 	Logger::LogInstruction("PUSH", "HL", "");
-	return 4;
+	return 16;
 }
 
 int CPU::POP_AF() {
 	this->AF.reg = PopReg();
 	Logger::LogInstruction("POP", "AF", "");
-	return 4;
+	return 12;
 }
 
 int CPU::POP_BC() {
 	this->BC.reg = PopReg();
 	Logger::LogInstruction("POP", "BC", "");
-	return 4;
+	return 12;
 }
 
 int CPU::POP_DE() {
 	this->DE.reg = PopReg();
 	Logger::LogInstruction("POP", "DE", "");
-	return 4;
+	return 12;
 }
 
 int CPU::POP_HL() {
 	this->HL.reg = PopReg();
 	Logger::LogInstruction("POP", "HL", "");
-	return 4;
+	return 12;
 }
 
 BYTE CPU::Add(BYTE operand1, BYTE operand2, bool addCarryFlag) {
@@ -2012,7 +2012,7 @@ int CPU::INC_MEM_HL() {
 	value = RegInc(value);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("Inc", "(HL)", "");
-	return 4;
+	return 12;
 }
 
 int CPU::INC_BC() {
@@ -2105,31 +2105,31 @@ int CPU::DEC_MEM_HL() {
 	value = RegDec(value);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("Dec", "(HL)", "");
-	return 4;
+	return 12;
 }
 
 int CPU::DEC_BC() {
 	this->BC.reg--;
 	Logger::LogInstruction("Dec", "BC", "");
-	return 4;
+	return 8;
 }
 
 int CPU::DEC_DE() {
 	this->DE.reg--;
 	Logger::LogInstruction("Dec", "DE", "");
-	return 4;
+	return 8;
 }
 
 int CPU::DEC_HL() {
 	this->HL.reg--;
 	Logger::LogInstruction("Dec", "HL", "");
-	return 4;
+	return 8;
 }
 
 int CPU::DEC_SP() {
 	this->SP.reg--;
 	Logger::LogInstruction("Dec", "SP", "");
-	return 4;
+	return 8;
 }
 
 
@@ -2636,13 +2636,13 @@ int CPU::RLC_HL() {
 int CPU::RLA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left);
 	Logger::LogInstruction("RLA", "", "");
-	return 8;
+	return 4;
 }
 
 int CPU::RLCA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left, false);
 	Logger::LogInstruction("RLCA", "", "");
-	return 8;
+	return 4;
 }
 
 int CPU::RRA() {
