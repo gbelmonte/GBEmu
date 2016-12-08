@@ -337,6 +337,16 @@ CPU::CPU(){
 	instructions_cb[0x76] = &CPU::BIT_6_HL;
 	instructions_cb[0x7E] = &CPU::BIT_7_HL;
 
+	//Swap
+	instructions_cb[0x37] = &CPU::SWAP_A;
+	instructions_cb[0x30] = &CPU::SWAP_B;
+	instructions_cb[0x31] = &CPU::SWAP_C;
+	instructions_cb[0x32] = &CPU::SWAP_D;
+	instructions_cb[0x33] = &CPU::SWAP_E;
+	instructions_cb[0x34] = &CPU::SWAP_H;
+	instructions_cb[0x35] = &CPU::SWAP_L;
+	instructions_cb[0x36] = &CPU::SWAP_HL;
+
 	//Rotates
 	instructions[0x17] = &CPU::RLA;
 	instructions[0x07] = &CPU::RLCA;
@@ -536,7 +546,6 @@ bool CPU::CheckInput(){
 }
 
 int CPU::STOP() {
-	this->PC.reg++;
 	return 4;
 }
 
@@ -2558,6 +2567,69 @@ int CPU::BIT_7_HL() {
 	TestBit(byte, BIT7);
 	Logger::LogInstruction("Bit", "7", "(HL)");
 	return 4;
+}
+
+BYTE CPU::SWAP(BYTE value) {
+	BYTE lower = value & 0x0F;
+	BYTE higher = (value >> 4) & 0x0F;
+
+	BYTE retVal = lower << 4;
+	retVal = retVal | higher;
+
+	if (retVal == 0) {
+		this->flags.z = 1;
+	}
+	else {
+		this->flags.z = 0;
+	}
+
+	this->flags.n = 0;
+	this->flags.h = 0;
+	this->flags.c = 0;
+
+	return retVal;
+}
+
+int CPU::SWAP_A() {
+	this->AF.hi = SWAP(this->AF.hi);
+	return 8;
+}
+
+int CPU::SWAP_B() {
+	this->BC.hi = SWAP(this->BC.hi);
+	return 8;
+}
+
+int CPU::SWAP_C() {
+	this->BC.lo = SWAP(this->BC.lo);
+	return 8;
+}
+
+int CPU::SWAP_D() {
+	this->DE.hi = SWAP(this->DE.hi);
+	return 8;
+}
+
+int CPU::SWAP_E() {
+	this->DE.lo = SWAP(this->DE.lo);
+	return 8;
+}
+
+int CPU::SWAP_H() {
+	this->HL.hi = SWAP(this->HL.hi);
+	return 8;
+}
+
+int CPU::SWAP_L() {
+	this->HL.lo = SWAP(this->HL.lo);
+	return 8;
+}
+
+int CPU::SWAP_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = SWAP(value);
+	this->memory.writeByte(this->HL.reg, value);
+	return 16;
 }
 
 BYTE CPU::Rotate(BYTE value, Direction direction, bool fromC) {

@@ -385,6 +385,17 @@ class CPU{
 		int BIT_6_HL();
 		int BIT_7_HL();
 
+		//Swap
+		BYTE SWAP(BYTE value);
+		int SWAP_A();
+		int SWAP_B();
+		int SWAP_C();
+		int SWAP_D();
+		int SWAP_E();
+		int SWAP_H();
+		int SWAP_L();
+		int SWAP_HL();
+
 		//Rotates
 		BYTE Rotate(BYTE value, Direction direction, bool fromC = true);
 		BYTE Shift(BYTE value, Direction direction, bool resetSB = true);
