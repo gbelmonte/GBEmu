@@ -117,6 +117,7 @@ CPU::CPU(){
 	instructions[0xe2] = &CPU::LD_FF00_C_A;
 	instructions[0xe0] = &CPU::LD_FF00_n_A;
 	instructions[0xF0] = &CPU::LDH_A_FF00_n;
+	instructions[0xF8] = &CPU::LDHL_SP_n;
 
 	//Load Dec
 	instructions[0x32] = &CPU::LDD_HL_A;
@@ -248,6 +249,10 @@ CPU::CPU(){
 	instructions[0x38] = &CPU::JR_C;
 	instructions[0x18] = &CPU::JR;
 	instructions[0xc3] = &CPU::JP_nn;
+	instructions[0xC2] = &CPU::JP_NZ;
+	instructions[0xCA] = &CPU::JP_Z;
+	instructions[0xD2] = &CPU::JP_NC;
+	instructions[0xDA] = &CPU::JP_C;
 	instructions[0xE9] = &CPU::JP_HL;
 
 	//Stack
@@ -416,7 +421,8 @@ CPU::CPU(){
 	instructions_cb[0x3D] = &CPU::SRL_L;
 	instructions_cb[0x3E] = &CPU::SRL_HL;
 
-	instructions[0xf3] = &CPU::DI;
+	instructions[0xF3] = &CPU::DI;
+	instructions[0xFB] = &CPU::EI;
 }
 
 CPU::~CPU(){
@@ -1059,6 +1065,17 @@ int CPU::LDH_A_FF00_n() {
 	return 12;
 }
 
+int CPU::LDHL_SP_n() {
+	WORD immediate = 0x00;
+	immediate |= this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	WORD value = Add16Bit(this->SP.reg, immediate);
+	this->flags.z = 0;
+	this->HL.reg = value;
+	Logger::LogInstruction("LDHL", "SP", "n");
+	return 12;
+}
+
 int CPU::LDD_HL_A(){
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
 	this->HL.reg--;
@@ -1183,6 +1200,47 @@ int CPU::JP_nn() {
 	this->PC.reg = address;
 	return 12;
 }
+
+int CPU::JP_NZ() {
+	WORD address = this->memory.readWord(this->PC.reg);
+	Logger::LogInstruction("JP", "NZ", "");
+	if (this->flags.z == 0) {
+		this->PC.reg = address;
+		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	}
+	return 12;
+}
+
+int CPU::JP_Z() {
+	WORD address = this->memory.readWord(this->PC.reg);
+	Logger::LogInstruction("JP", "Z", "");
+	if (this->flags.z == 1) {
+		this->PC.reg = address;
+		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	}
+	return 12;
+}
+
+int CPU::JP_NC() {
+	WORD address = this->memory.readWord(this->PC.reg);
+	Logger::LogInstruction("JP", "NC", "");
+	if (this->flags.c == 0) {
+		this->PC.reg = address;
+		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	}
+	return 12;
+}
+
+int CPU::JP_C() {
+	WORD address = this->memory.readWord(this->PC.reg);
+	Logger::LogInstruction("JP", "C", "");
+	if (this->flags.c == 1) {
+		this->PC.reg = address;
+		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	}
+	return 12;
+}
+
 
 int CPU::JP_HL() {
 	Logger::LogInstruction("JP", "HL", "");
@@ -3066,6 +3124,11 @@ int CPU::SRL_HL() {
 
 int CPU::DI() {
 	Logger::LogInstruction("DI", "", "");
+	return 4;
+}
+
+int CPU::EI() {
+	Logger::LogInstruction("EI", "", "");
 	return 4;
 }
 

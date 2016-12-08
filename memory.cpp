@@ -160,7 +160,7 @@ void Memory::writeWord(WORD address, WORD value) {
 bool Memory::LoadCartridge(){
 	size_t result;
 
-	FILE * pFile = fopen("cpu_instrs.gb", "rb");
+	FILE * pFile = fopen("ld_r_r.gb", "rb");
 	if (pFile == NULL) {
 		return false;
 	}

@@ -139,6 +139,7 @@ class CPU{
 		int LD_FF00_C_A();
 		int LD_FF00_n_A();
 		int LDH_A_FF00_n();
+		int LDHL_SP_n();
 
 		//Load Dec
 		int LDD_HL_A();
@@ -249,6 +250,10 @@ class CPU{
 		int JR_C();
 		int JR();
 		int JP_nn();
+		int JP_NZ();
+		int JP_Z();
+		int JP_NC();
+		int JP_C();
 		int JP_HL();
 
 		//Stack instructions
@@ -469,4 +474,5 @@ class CPU{
 		int SRL_HL();
 
 		int DI();
+		int EI();
 };
