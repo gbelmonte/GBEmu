@@ -8,7 +8,7 @@ CPU::CPU(){
 	this->PC.reg = 0x100;
 	//this->PC.reg = 0x00;
 
-	this->AF.reg = 0x11B0;
+	this->AF.reg = 0x01B0;
 	this->BC.reg = 0x0013;
 	this->DE.reg = 0x00D8;
 	this->HL.reg = 0x014D;
@@ -266,6 +266,7 @@ CPU::CPU(){
 	instructions[0xC8] = &CPU::RET_Z;
 	instructions[0xD0] = &CPU::RET_NC;
 	instructions[0xD8] = &CPU::RET_C;
+	instructions[0xD9] = &CPU::RETI;
 	instructions[0xF5] = &CPU::PUSH_AF;
 	instructions[0xC5] = &CPU::PUSH_BC;
 	instructions[0xD5] = &CPU::PUSH_DE;
@@ -275,6 +276,16 @@ CPU::CPU(){
 	instructions[0xC1] = &CPU::POP_BC;
 	instructions[0xD1] = &CPU::POP_DE;
 	instructions[0xE1] = &CPU::POP_HL;
+
+	//RSTs
+	instructions[0xC7] = &CPU::RST_00;
+	instructions[0xCF] = &CPU::RST_08;
+	instructions[0xD7] = &CPU::RST_10;
+	instructions[0xDF] = &CPU::RST_18;
+	instructions[0xE7] = &CPU::RST_20;
+	instructions[0xEF] = &CPU::RST_28;
+	instructions[0xF7] = &CPU::RST_30;
+	instructions[0xFF] = &CPU::RST_38;
 
 	//Bit opcodes
 	instructions_cb[0x47] = &CPU::BIT_0_A;
@@ -441,7 +452,7 @@ BYTE CPU::Fetch(){
 		string hello;
 		cin >> hello;
 	}
-	cout << hex << "AF: " << this->AF.reg << " BC: " << this->BC.reg << " DE: " << this->DE.reg << " HL: " << this->HL.reg << " SP: " << this->SP.reg << " Z: " << this->flags.z << " C: " << this->flags.c << " H: " << this->flags.h << " n " << this->flags.n << endl;
+	cout << hex << "AF: " << this->AF.reg << " BC: " << this->BC.reg << " DE: " << this->DE.reg << " HL: " << this->HL.reg << " SP: " << this->SP.reg << " Z: " << getFlag(Flag::z) << " C: " << getFlag(Flag::c) << " H: " << getFlag(Flag::h) << " n " << getFlag(Flag::n) << endl;
 	Logger::LogPC(this->PC.reg);
 	this->PC.reg = this->PC.reg + 1;
 	return opcode;
@@ -549,6 +560,63 @@ void CPU::DrawLine() {
 
 bool CPU::CheckInput(){
 	return this->gpu.CheckInput();
+}
+
+BYTE CPU::getFlag(Flag flag) {
+	BYTE retVal = 0x00;
+
+	switch(flag) {
+		case Flag::z:
+			retVal = (this->AF.lo & BIT7) >> 7;
+			break;
+		case Flag::n:
+			retVal = (this->AF.lo & BIT6) >> 6;
+			break;
+		case Flag::h:
+			retVal = (this->AF.lo & BIT5) >> 5;
+			break;
+		case Flag::c:
+			retVal = (this->AF.lo & BIT4) >> 4;
+			break;
+		default: break;
+	}
+
+	return retVal;
+}
+
+void CPU::setFlag(Flag flag) {
+	if (flag == Flag::z) {
+		this->AF.lo = this->AF.lo | BIT7;
+	}
+	else if (flag == Flag::n) {
+		this->AF.lo = this->AF.lo | BIT6;
+	}
+	else if (flag == Flag::h) {
+		this->AF.lo = this->AF.lo | BIT5;
+	}
+	else if (flag == Flag::c) {
+		this->AF.lo = this->AF.lo | BIT4;
+	}
+}
+
+void CPU::resetFlag(Flag flag) {
+	if (flag == Flag::z) {
+		this->AF.lo = this->AF.lo & ~BIT7;
+	}
+	else if (flag == Flag::n) {
+		this->AF.lo = this->AF.lo & ~BIT6;
+	}
+	else if (flag == Flag::h) {
+		this->AF.lo = this->AF.lo & ~BIT5;
+	}
+	else if (flag == Flag::c) {
+		this->AF.lo = this->AF.lo & ~BIT4;
+	}
+}
+
+int CPU::NOP() {
+	Logger::LogInstruction("NOP", "", ""); 
+	return 4; 
 }
 
 int CPU::STOP() {
@@ -1070,7 +1138,7 @@ int CPU::LDHL_SP_n() {
 	immediate |= this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
 	WORD value = Add16Bit(this->SP.reg, immediate);
-	this->flags.z = 0;
+	resetFlag(Flag::z);
 	this->HL.reg = value;
 	Logger::LogInstruction("LDHL", "SP", "n");
 	return 12;
@@ -1145,7 +1213,7 @@ int CPU::JR_NZ() {
 	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
 	Logger::LogInstruction("JR", "NZ", "");
-	if (this->flags.z == 0) {
+	if (getFlag(Flag::z) == 0) {
 		this->PC.reg += offset;
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
@@ -1156,7 +1224,7 @@ int CPU::JR_Z() {
 	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
 	Logger::LogInstruction("JR", "Z", "");
-	if (this->flags.z == 1) {
+	if (getFlag(Flag::z) == 1) {
 		this->PC.reg += offset;
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
@@ -1167,7 +1235,7 @@ int CPU::JR_NC() {
 	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
 	Logger::LogInstruction("JR", "NC", "");
-	if (this->flags.c == 0) {
+	if (getFlag(Flag::c) == 0) {
 		this->PC.reg += offset;
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
@@ -1178,7 +1246,7 @@ int CPU::JR_C() {
 	SIGNED_BYTE offset = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
 	Logger::LogInstruction("JR", "C", "");
-	if (this->flags.c == 1) {
+	if (getFlag(Flag::c) == 1) {
 		this->PC.reg += offset;
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
@@ -1203,8 +1271,9 @@ int CPU::JP_nn() {
 
 int CPU::JP_NZ() {
 	WORD address = this->memory.readWord(this->PC.reg);
+	this->PC.reg += 2;
 	Logger::LogInstruction("JP", "NZ", "");
-	if (this->flags.z == 0) {
+	if (getFlag(Flag::z) == 0) {
 		this->PC.reg = address;
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
@@ -1213,8 +1282,9 @@ int CPU::JP_NZ() {
 
 int CPU::JP_Z() {
 	WORD address = this->memory.readWord(this->PC.reg);
+	this->PC.reg += 2;
 	Logger::LogInstruction("JP", "Z", "");
-	if (this->flags.z == 1) {
+	if (getFlag(Flag::z) == 1) {
 		this->PC.reg = address;
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
@@ -1223,8 +1293,9 @@ int CPU::JP_Z() {
 
 int CPU::JP_NC() {
 	WORD address = this->memory.readWord(this->PC.reg);
+	this->PC.reg += 2;
 	Logger::LogInstruction("JP", "NC", "");
-	if (this->flags.c == 0) {
+	if (getFlag(Flag::c) == 0) {
 		this->PC.reg = address;
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
@@ -1233,8 +1304,9 @@ int CPU::JP_NC() {
 
 int CPU::JP_C() {
 	WORD address = this->memory.readWord(this->PC.reg);
+	this->PC.reg += 2;
 	Logger::LogInstruction("JP", "C", "");
-	if (this->flags.c == 1) {
+	if (getFlag(Flag::c) == 1) {
 		this->PC.reg = address;
 		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
 	}
@@ -1306,7 +1378,7 @@ int CPU::CALL_NZ_nn() {
 	WORD immediate = this->memory.readWord(this->PC.reg);
 	this->PC.reg+=2;
 	Logger::LogInstruction("Call", "NZ", "nn");
-	if (this->flags.z == 0) {
+	if (getFlag(Flag::z) == 0) {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
 		cout << hex << "Call taken to 0x" << (int) this->PC.reg << endl;
@@ -1318,7 +1390,7 @@ int CPU::CALL_Z_nn() {
 	WORD immediate = this->memory.readWord(this->PC.reg);
 	this->PC.reg+=2;
 	Logger::LogInstruction("Call", "Z", "nn");
-	if (this->flags.z == 1) {
+	if (getFlag(Flag::z) == 1) {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
 		cout << hex << "Call taken to 0x" << (int) this->PC.reg << endl;
@@ -1330,7 +1402,7 @@ int CPU::CALL_NC_nn() {
 	WORD immediate = this->memory.readWord(this->PC.reg);
 	this->PC.reg+=2;
 	Logger::LogInstruction("Call", "NC", "nn");
-	if (this->flags.c == 0) {
+	if (getFlag(Flag::c) == 0) {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
 		cout << hex << "Call taken to 0x" << (int) this->PC.reg << endl;
@@ -1342,7 +1414,7 @@ int CPU::CALL_C_nn() {
 	WORD immediate = this->memory.readWord(this->PC.reg);
 	this->PC.reg+=2;
 	Logger::LogInstruction("Call", "C", "nn");
-	if (this->flags.c == 1) {
+	if (getFlag(Flag::c) == 1) {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
 		cout << hex << "Call taken to 0x" << (int) this->PC.reg << endl;
@@ -1359,7 +1431,7 @@ int CPU::RET() {
 
 int CPU::RET_NZ() {
 	Logger::LogInstruction("RET", "NZ", "");
-	if (this->flags.z == 0) {
+	if (getFlag(Flag::z) == 0) {
 		this->PC.reg = PopReg();
 		cout << hex << "Ret taken to 0x" << (int) this->PC.reg << endl;
 	}
@@ -1368,7 +1440,7 @@ int CPU::RET_NZ() {
 
 int CPU::RET_Z() {
 	Logger::LogInstruction("RET", "Z", "");
-	if (this->flags.z == 1) {
+	if (getFlag(Flag::z) == 1) {
 		this->PC.reg = PopReg();
 		cout << hex << "Ret taken to 0x" << (int) this->PC.reg << endl;
 	}
@@ -1377,7 +1449,7 @@ int CPU::RET_Z() {
 
 int CPU::RET_NC() {
 	Logger::LogInstruction("RET", "NC", "");
-	if (this->flags.c == 0) {
+	if (getFlag(Flag::c) == 0) {
 		this->PC.reg = PopReg();
 		cout << hex << "Ret taken to 0x" << (int) this->PC.reg << endl;
 	}
@@ -1386,10 +1458,16 @@ int CPU::RET_NC() {
 
 int CPU::RET_C() {
 	Logger::LogInstruction("RET", "C", "");
-	if (this->flags.c == 1) {
+	if (getFlag(Flag::c) == 1) {
 		this->PC.reg = PopReg();
 		cout << hex << "Ret taken to 0x" << (int) this->PC.reg << endl;
 	}
+	return 8;
+}
+
+int CPU::RETI() {
+	this->PC.reg = PopReg();
+	Logger::LogInstruction("RETI", "", "");
 	return 8;
 }
 
@@ -1441,32 +1519,89 @@ int CPU::POP_HL() {
 	return 12;
 }
 
+int CPU::RST_00() {
+	PushReg(this->PC.reg);
+	this->PC.reg = 0x0000;
+	Logger::LogInstruction("RST", "00", "");
+	return 32;
+}
+
+int CPU::RST_08() {
+	PushReg(this->PC.reg);
+	this->PC.reg = 0x0008;
+	Logger::LogInstruction("RST", "08", "");
+	return 32;
+}
+
+int CPU::RST_10() {
+	PushReg(this->PC.reg);
+	this->PC.reg = 0x0010;
+	Logger::LogInstruction("RST", "10", "");
+	return 32;
+}
+
+int CPU::RST_18() {
+	PushReg(this->PC.reg);
+	this->PC.reg = 0x0018;
+	Logger::LogInstruction("RST", "18", "");
+	return 32;
+}
+
+int CPU::RST_20() {
+	PushReg(this->PC.reg);
+	this->PC.reg = 0x0020;
+	Logger::LogInstruction("RST", "20", "");
+	return 32;
+}
+
+int CPU::RST_28() {
+	PushReg(this->PC.reg);
+	this->PC.reg = 0x0028;
+	Logger::LogInstruction("RST", "28", "");
+	return 32;
+}
+
+int CPU::RST_30() {
+	PushReg(this->PC.reg);
+	this->PC.reg = 0x0030;
+	Logger::LogInstruction("RST", "30", "");
+	return 32;
+}
+
+int CPU::RST_38() {
+	PushReg(this->PC.reg);
+	this->PC.reg = 0x0038;
+	Logger::LogInstruction("RST", "38", "");
+	return 32;
+}
+
+
 BYTE CPU::Add(BYTE operand1, BYTE operand2, bool addCarryFlag) {
-	BYTE carry = (addCarryFlag) ? this->flags.c : 0;
+	BYTE carry = (addCarryFlag) ? getFlag(Flag::c) : 0;
 	bool setHalfCarry = ((operand1 & 0x0F) + ((operand2 + carry) & 0x0F) > 0x0F);
 	BYTE sum = operand1 + operand2 + carry;
 
 	if (sum == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
+	resetFlag(Flag::n);
 
 	if (setHalfCarry) {
-		this->flags.h = 1;
+		setFlag(Flag::h);
 	}
 	else {
-		this->flags.h = 0;
+		resetFlag(Flag::h);
 	}
 
 	if (sum < operand1) {
-		this->flags.c = 1;
+		setFlag(Flag::c);
 	}
 	else {
-		this->flags.c = 0;
+		resetFlag(Flag::c);
 	}
 	
 	return sum;
@@ -1534,26 +1669,26 @@ WORD CPU::Add16Bit(WORD operand1, WORD operand2) {
 	WORD sum = operand1 + operand2;
 
 	if (sum == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
+	resetFlag(Flag::n);
 
 	if (setHalfCarry) {
-		this->flags.h = 1;
+		setFlag(Flag::h);
 	}
 	else {
-		this->flags.h = 0;
+		resetFlag(Flag::h);
 	}
 
 	if (sum < operand1) {
-		this->flags.c = 1;
+		setFlag(Flag::c);
 	}
 	else {
-		this->flags.c = 0;
+		resetFlag(Flag::c);
 	}
 	
 	return sum;
@@ -1644,26 +1779,32 @@ int CPU::ADC_n() {
 //Math instructions
 BYTE CPU::Subtract(BYTE from, BYTE sub) {
 	bool setHalfCarry = ((int)(from & 0x0F) - (int)(sub & 0x0F) < 0x00);
-	this->flags.c = (sub > from);
+
+	if (sub > from) {
+		setFlag(Flag::c);
+	}
+	else {
+		resetFlag(Flag::c);
+	}
+
 	from = from - sub;
 
 	if (from == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 1;
+	setFlag(Flag::n);
 
 	if (setHalfCarry) {
-		this->flags.h = 0;
+		resetFlag(Flag::h);
 	}
 	else {
-		this->flags.h = 1;
+		setFlag(Flag::h);
 	}
 	
-
 	return from;
 }
 
@@ -1727,15 +1868,15 @@ int CPU::SUB_n() {
 BYTE CPU::XOR(BYTE operand1, BYTE operand2) {
 	BYTE retVal = operand1 ^ operand2;
 	if (retVal == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
-	this->flags.c = 0;
-	this->flags.h = 0;
+	resetFlag(Flag::n);
+	resetFlag(Flag::c);
+	resetFlag(Flag::h);
 
 	return retVal;
 }
@@ -1798,15 +1939,15 @@ int CPU::XOR_n() {
 BYTE CPU::AND(BYTE operand1, BYTE operand2) {
 	BYTE retVal = operand1 & operand2;
 	if (retVal == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
-	this->flags.c = 0;
-	this->flags.h = 1;
+	resetFlag(Flag::n);
+	resetFlag(Flag::c);
+	setFlag(Flag::h);
 
 	return retVal;
 }
@@ -1869,15 +2010,15 @@ int CPU::AND_n() {
 BYTE CPU::OR(BYTE operand1, BYTE operand2) {
 	BYTE retVal = operand1 | operand2;
 	if (retVal == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
-	this->flags.c = 0;
-	this->flags.h = 0;
+	resetFlag(Flag::n);
+	resetFlag(Flag::c);
+	resetFlag(Flag::h);
 
 	return retVal;
 }
@@ -1942,19 +2083,26 @@ void CPU::Compare(BYTE value) {
 	BYTE diff = this->AF.hi - value;
 
 	if (diff == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 1;
+	setFlag(Flag::n);
 
 	if (setHalfCarry){
-		this->flags.h = 1;
+		setFlag(Flag::h);
 	}
+	else{
+		resetFlag(Flag::h);
+	}
+
 	if (this->AF.hi < value) {
-		this->flags.c = 1;
+		setFlag(Flag::c);
+	}
+	else {
+		resetFlag(Flag::c);
 	}
 }
 
@@ -2021,18 +2169,18 @@ BYTE CPU::RegInc(BYTE value) {
 	value++;
 
 	if (value == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
+	resetFlag(Flag::n);
 	if (setHalfCarry){
-		this->flags.h = 1;
+		setFlag(Flag::h);
 	}
 	else {
-		this->flags.h = 0;
+		resetFlag(Flag::h);
 	}
 
 	return value;
@@ -2118,15 +2266,15 @@ BYTE CPU::RegDec(BYTE value) {
 	value--;
 
 	if (value == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 1;
+	setFlag(Flag::n);
 	if (setHalfCarry){
-		this->flags.h = 1;
+		setFlag(Flag::h);
 	}
 	return value;
 }
@@ -2212,14 +2360,14 @@ void CPU::TestBit(BYTE byte, BYTE mask) {
 	byte = byte & mask;
 //	cout << hex << (int)byte << endl;
 	if (byte != 0) {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
-	this->flags.h = 1;
+	resetFlag(Flag::n);
+	setFlag(Flag::h);
 }
 
 BYTE CPU::GetBit(BYTE value, int bitPos) {
@@ -2635,15 +2783,15 @@ BYTE CPU::SWAP(BYTE value) {
 	retVal = retVal | higher;
 
 	if (retVal == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
-	this->flags.h = 0;
-	this->flags.c = 0;
+	resetFlag(Flag::n);
+	resetFlag(Flag::h);
+	resetFlag(Flag::c);
 
 	return retVal;
 }
@@ -2691,30 +2839,37 @@ int CPU::SWAP_HL() {
 }
 
 BYTE CPU::Rotate(BYTE value, Direction direction, bool fromC) {
+	BYTE carry = 0;
+
 	if (direction == Direction::right) {
-		BYTE carry = value & BIT0;
+		carry = value & BIT0;
 		value = value >> 1;
-		BYTE sevenBit = (fromC) ? this->flags.c : carry;
+		BYTE sevenBit = (fromC) ? getFlag(Flag::c) : carry;
 		value = value | (sevenBit << 7);
-		this->flags.c = carry;
 	}
 	else {
-		BYTE carry = (value & BIT7) >> 7;
+		carry = (value & BIT7) >> 7;
 		value = value << 1;
-		BYTE zeroBit = (fromC) ? this->flags.c : carry; 
-		value = value | this->flags.c;
-		this->flags.c = carry;
+		BYTE zeroBit = (fromC) ? getFlag(Flag::c) : carry; 
+		value = value | getFlag(Flag::c);
+	}
+
+	if (carry == 1) {
+		setFlag(Flag::c);
+	}
+	else {
+		resetFlag(Flag::c);
 	}
 
 	if (value == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
-	this->flags.h = 0;
+	resetFlag(Flag::n);
+	resetFlag(Flag::h);
 
 	return value;
 }
@@ -2944,30 +3099,37 @@ int CPU::RR_HL() {
 }
 
 BYTE CPU::Shift(BYTE value, Direction direction, bool resetSB) {
+	BYTE carry = 0;
+
 	if (direction == Direction::right) {
-		BYTE carry = value & BIT0;
+		carry = value & BIT0;
 		BYTE bit7 = (value & BIT7) >> 7;
 		value = value >> 1;
 		value |= (resetSB) ? 0: bit7;
-		this->flags.c = carry;
 	}
 	else {
-		BYTE carry = (value & BIT7) >> 7;
+		carry = (value & BIT7) >> 7;
 		BYTE bit0 = (value & BIT0);
 		value = value << 1;
 		value |= (resetSB) ? 0: bit0;
-		this->flags.c = carry;
+	}
+
+	if (carry == 1) {
+		setFlag(Flag::c);
+	}
+	else {
+		resetFlag(Flag::c);
 	}
 
 	if (value == 0) {
-		this->flags.z = 1;
+		setFlag(Flag::z);
 	}
 	else {
-		this->flags.z = 0;
+		resetFlag(Flag::z);
 	}
 
-	this->flags.n = 0;
-	this->flags.h = 0;
+	resetFlag(Flag::n);
+	resetFlag(Flag::h);
 
 	return value;
 }

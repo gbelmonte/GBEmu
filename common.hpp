@@ -14,13 +14,6 @@ union Register{
 	};
 };
 
-struct Flags{
-	unsigned z:1; //Zero Flag
-	unsigned n:1; //Subtract Flag
-	unsigned h:1; //Half Carry Flag
-	unsigned c:1; //Carry Flag
-};
-
 const BYTE BIT7 = 0x80;
 const BYTE BIT6 = 0x40;
 const BYTE BIT5 = 0x20;
@@ -33,6 +26,13 @@ const BYTE BIT0 = 0x01;
 enum Direction {
 	right,
 	left
+};
+
+enum Flag {
+	z,
+	n,
+	h,
+	c
 };
 
 #endif

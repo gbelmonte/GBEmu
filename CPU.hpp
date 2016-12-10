@@ -30,8 +30,6 @@ class CPU{
 		Register SP;
 		Register PC;
 
-		Flags flags;
-
 		Memory memory;
 		GPU gpu;
 		int cycleCounter;
@@ -43,9 +41,12 @@ class CPU{
 		int (CPU::*instructions_cb[300])();
 
 		void DrawLine();
+		BYTE getFlag(Flag flag);
+		void setFlag(Flag flag);
+		void resetFlag(Flag flag);
 
 		//instructions
-		int NOP() {};
+		int NOP();
 		int STOP();
 
 		//load immediates
@@ -274,6 +275,7 @@ class CPU{
 		int RET_Z();
 		int RET_NC();
 		int RET_C();
+		int RETI();
 		int PUSH_AF();
 		int PUSH_BC();
 		int PUSH_DE();
@@ -282,6 +284,15 @@ class CPU{
 		int POP_BC();
 		int POP_DE();
 		int POP_HL();
+
+		int RST_00();
+		int RST_08();
+		int RST_10();
+		int RST_18();
+		int RST_20();
+		int RST_28();
+		int RST_30();
+		int RST_38();
 
 		//Increments
 		BYTE RegInc(BYTE value);
