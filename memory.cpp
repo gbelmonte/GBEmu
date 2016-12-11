@@ -160,7 +160,7 @@ void Memory::writeWord(WORD address, WORD value) {
 bool Memory::LoadCartridge(){
 	size_t result;
 
-	FILE * pFile = fopen("jumps.gb", "rb");
+	FILE * pFile = fopen("op_r_r.gb", "rb");
 	if (pFile == NULL) {
 		return false;
 	}

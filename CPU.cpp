@@ -170,6 +170,16 @@ CPU::CPU(){
 	instructions[0x96] = &CPU::SUB_HL;
 	instructions[0xD6] = &CPU::SUB_n;
 
+	instructions[0x9F] = &CPU::SBC_A;
+	instructions[0x98] = &CPU::SBC_B;
+	instructions[0x99] = &CPU::SBC_C;
+	instructions[0x9A] = &CPU::SBC_D;
+	instructions[0x9B] = &CPU::SBC_E;
+	instructions[0x9C] = &CPU::SBC_H;
+	instructions[0x9D] = &CPU::SBC_L;
+	instructions[0x9E] = &CPU::SBC_HL;
+	//instructions[0x00] = &CPU::SBC_n;
+
 	//XORs
 	instructions[0xAF] = &CPU::XOR_A;
 	instructions[0xA8] = &CPU::XOR_B;
@@ -202,6 +212,12 @@ CPU::CPU(){
 	instructions[0xB5] = &CPU::OR_L;
 	instructions[0xB6] = &CPU::OR_HL;
 	instructions[0xF6] = &CPU::OR_n;
+
+	//Complement
+	instructions[0x2F] = &CPU::CPL;
+
+	instructions[0x37] = &CPU::SCF;
+	instructions[0x3F] = &CPU::CCF;
 
 	instructions[0xBF] = &CPU::CP_A;
 	instructions[0xB8] = &CPU::CP_B;
@@ -452,7 +468,7 @@ BYTE CPU::Fetch(){
 		string hello;
 		cin >> hello;
 	}
-	cout << hex << "AF: " << this->AF.reg << " BC: " << this->BC.reg << " DE: " << this->DE.reg << " HL: " << this->HL.reg << " SP: " << this->SP.reg << " Z: " << getFlag(Flag::z) << " C: " << getFlag(Flag::c) << " H: " << getFlag(Flag::h) << " n " << getFlag(Flag::n) << endl;
+	//cout << hex << "AF: " << this->AF.reg << " BC: " << this->BC.reg << " DE: " << this->DE.reg << " HL: " << this->HL.reg << " SP: " << this->SP.reg << " Z: " << (int)getFlag(Flag::z) << " C: " << (int)getFlag(Flag::c) << " H: " << (int)getFlag(Flag::h) << " n " << (int)getFlag(Flag::n) << endl;
 	Logger::LogPC(this->PC.reg);
 	this->PC.reg = this->PC.reg + 1;
 	return opcode;
@@ -1777,17 +1793,18 @@ int CPU::ADC_n() {
 }
 
 //Math instructions
-BYTE CPU::Subtract(BYTE from, BYTE sub) {
-	bool setHalfCarry = ((int)(from & 0x0F) - (int)(sub & 0x0F) < 0x00);
+BYTE CPU::Subtract(BYTE from, BYTE sub, bool subCarryFlag) {
+	BYTE carry = (subCarryFlag) ? getFlag(Flag::c) : 0;
+	bool setHalfCarry = ((int)(from & 0x0F) - (int)((sub + carry) & 0x0F) < 0x00);
 
-	if (sub > from) {
+	if ((sub + carry) > from) {
 		setFlag(Flag::c);
 	}
 	else {
 		resetFlag(Flag::c);
 	}
 
-	from = from - sub;
+	from = from - sub - carry;
 
 	if (from == 0) {
 		setFlag(Flag::z);
@@ -1863,6 +1880,63 @@ int CPU::SUB_n() {
 	Logger::LogInstruction("Sub", "imm", "");
 	return 8;
 }
+
+int CPU::SBC_A() {
+	this->AF.hi = Subtract(this->AF.hi, this->AF.hi, true);
+	Logger::LogInstruction("Sbc", "A", "");
+	return 4;
+}
+
+int CPU::SBC_B() {
+	this->AF.hi = Subtract(this->AF.hi, this->BC.hi, true);
+	Logger::LogInstruction("Sbc", "B", "");
+	return 4;
+}
+
+int CPU::SBC_C() {
+	this->AF.hi = Subtract(this->AF.hi, this->BC.lo, true);
+	Logger::LogInstruction("Sbc", "C", "");
+	return 4;
+}
+
+int CPU::SBC_D() {
+	this->AF.hi = Subtract(this->AF.hi, this->DE.hi, true);
+	Logger::LogInstruction("Sbc", "D", "");
+	return 4;
+}
+
+int CPU::SBC_E() {
+	this->AF.hi = Subtract(this->AF.hi, this->DE.lo, true);
+	Logger::LogInstruction("Sbc", "E", "");
+	return 4;
+}
+
+int CPU::SBC_H() {
+	this->AF.hi = Subtract(this->AF.hi, this->HL.hi, true);
+	Logger::LogInstruction("Sbc", "H", "");
+	return 4;
+}
+
+int CPU::SBC_L() {
+	this->AF.hi = Subtract(this->AF.hi, this->HL.lo, true);
+	Logger::LogInstruction("Sbc", "L", "");
+	return 4;
+}
+
+int CPU::SBC_HL() {
+	this->AF.hi = Subtract(this->AF.hi, this->memory.readByte(this->HL.hi), true);
+	Logger::LogInstruction("Sbc", "(HL)", "");
+	return 8;
+}
+
+int CPU::SBC_n() {
+	BYTE value = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	this->AF.hi = Subtract(this->AF.hi, value, true);
+	Logger::LogInstruction("Sbc", "imm", "");
+	return 4;
+}
+
 
 
 BYTE CPU::XOR(BYTE operand1, BYTE operand2) {
@@ -2078,6 +2152,36 @@ int CPU::OR_n() {
 	return 8;
 }
 
+int CPU::CPL() {
+	this->AF.hi = ~(this->AF.hi);
+	setFlag(Flag::n);
+	setFlag(Flag::h);
+	Logger::LogInstruction("CPL", "", "");
+	return 4;
+}
+
+int CPU::SCF() {
+	setFlag(Flag::c);
+	resetFlag(Flag::n);
+	resetFlag(Flag::h);
+	Logger::LogInstruction("SCF", "", "");
+	return 4;
+}
+
+int CPU::CCF() {
+	if (getFlag(Flag::c) == 1) {
+		resetFlag(Flag::c);
+	}
+	else {
+		setFlag(Flag::c);
+	}
+
+	resetFlag(Flag::n);
+	resetFlag(Flag::h);
+	Logger::LogInstruction("CCF", "", "");
+	return 4;
+}
+
 void CPU::Compare(BYTE value) {
 	bool setHalfCarry = ((int)(this->AF.hi & 0x0F) - (int)(value & 0x0F) < 0x00);
 	BYTE diff = this->AF.hi - value;
@@ -2094,7 +2198,7 @@ void CPU::Compare(BYTE value) {
 	if (setHalfCarry){
 		setFlag(Flag::h);
 	}
-	else{
+	else {
 		resetFlag(Flag::h);
 	}
 

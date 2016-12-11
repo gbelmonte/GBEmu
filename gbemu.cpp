@@ -5,7 +5,7 @@ using namespace std;
 int main(int argc, char** argv){
 	CPU cpu;
 	cpu.LoadCartridge();
-	Logger::InitLogger(true);
+	Logger::InitLogger(false);
 
 	bool quit = false;
 	while(!quit){

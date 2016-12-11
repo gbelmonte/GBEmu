@@ -185,7 +185,7 @@ class CPU{
 		int ADC_n();
 
 		//SUB
-		BYTE Subtract(BYTE from, BYTE sub);
+		BYTE Subtract(BYTE from, BYTE sub, bool subCarryFlag = false);
 		int SUB_A();
 		int SUB_B();
 		int SUB_C();
@@ -195,6 +195,16 @@ class CPU{
 		int SUB_L();
 		int SUB_HL();
 		int SUB_n();
+
+		int SBC_A();
+		int SBC_B();
+		int SBC_C();
+		int SBC_D();
+		int SBC_E();
+		int SBC_H();
+		int SBC_L();
+		int SBC_HL();
+		int SBC_n();
 
 		//XOR
 		BYTE XOR(BYTE operand1, BYTE operand2);
@@ -231,6 +241,11 @@ class CPU{
 		int OR_L();
 		int OR_HL();
 		int OR_n();
+
+		int CPL();
+
+		int SCF();
+		int CCF();
 
 		//CP
 		void Compare(BYTE value);
