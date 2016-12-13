@@ -617,16 +617,16 @@ void CPU::setFlag(Flag flag) {
 
 void CPU::resetFlag(Flag flag) {
 	if (flag == Flag::z) {
-		this->AF.lo = this->AF.lo & ~BIT7;
+		this->AF.lo = this->AF.lo & (~BIT7);
 	}
 	else if (flag == Flag::n) {
-		this->AF.lo = this->AF.lo & ~BIT6;
+		this->AF.lo = this->AF.lo & (~BIT6);
 	}
 	else if (flag == Flag::h) {
-		this->AF.lo = this->AF.lo & ~BIT5;
+		this->AF.lo = this->AF.lo & (~BIT5);
 	}
 	else if (flag == Flag::c) {
-		this->AF.lo = this->AF.lo & ~BIT4;
+		this->AF.lo = this->AF.lo & (~BIT4);
 	}
 }
 
@@ -1594,7 +1594,7 @@ int CPU::RST_38() {
 
 BYTE CPU::Add(BYTE operand1, BYTE operand2, bool addCarryFlag) {
 	BYTE carry = (addCarryFlag) ? getFlag(Flag::c) : 0;
-	bool setHalfCarry = ((operand1 & 0x0F) + ((operand2 + carry) & 0x0F) > 0x0F);
+	bool setHalfCarry = (((operand1 & 0x0F) + (operand2 & 0x0F) + (carry & 0x0F)) > 0x0F);
 	BYTE sum = operand1 + operand2 + carry;
 
 	if (sum == 0) {
@@ -1613,7 +1613,7 @@ BYTE CPU::Add(BYTE operand1, BYTE operand2, bool addCarryFlag) {
 		resetFlag(Flag::h);
 	}
 
-	if (sum < operand1) {
+	if (sum < (operand1 + carry)) {
 		setFlag(Flag::c);
 	}
 	else {
@@ -2366,7 +2366,7 @@ int CPU::INC_SP() {
 
 
 BYTE CPU::RegDec(BYTE value) {
-	bool setHalfCarry = ((int)(value & 0x0F) - (int)(1 & 0x0F) < 0x00);
+	bool setHalfCarry = (((int)(value & 0x0F) - (int)(1 & 0x0F)) < 0x00);
 	value--;
 
 	if (value == 0) {
@@ -2377,9 +2377,14 @@ BYTE CPU::RegDec(BYTE value) {
 	}
 
 	setFlag(Flag::n);
+
 	if (setHalfCarry){
 		setFlag(Flag::h);
 	}
+	else {
+		resetFlag(Flag::h);
+	}
+
 	return value;
 }
 
@@ -2955,7 +2960,7 @@ BYTE CPU::Rotate(BYTE value, Direction direction, bool fromC) {
 		carry = (value & BIT7) >> 7;
 		value = value << 1;
 		BYTE zeroBit = (fromC) ? getFlag(Flag::c) : carry; 
-		value = value | getFlag(Flag::c);
+		value = value | zeroBit;
 	}
 
 	if (carry == 1) {
@@ -3029,25 +3034,29 @@ int CPU::RLC_HL() {
 }
 
 int CPU::RLA() {
-	this->AF.hi = Rotate(this->AF.hi, Direction::left);
+	this->AF.hi = Rotate(this->AF.hi, Direction::left, true);
+	resetFlag(Flag::z);
 	Logger::LogInstruction("RLA", "", "");
 	return 4;
 }
 
 int CPU::RLCA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::left, false);
+	resetFlag(Flag::z);
 	Logger::LogInstruction("RLCA", "", "");
 	return 4;
 }
 
 int CPU::RRA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::right);
+	resetFlag(Flag::z);
 	Logger::LogInstruction("RRA", "", "");
 	return 4;
 }
 
 int CPU::RRCA() {
 	this->AF.hi = Rotate(this->AF.hi, Direction::right, false);
+	resetFlag(Flag::z);
 	Logger::LogInstruction("RRCA", "", "");
 	return 4;
 }
@@ -3207,7 +3216,7 @@ BYTE CPU::Shift(BYTE value, Direction direction, bool resetSB) {
 
 	if (direction == Direction::right) {
 		carry = value & BIT0;
-		BYTE bit7 = (value & BIT7) >> 7;
+		BYTE bit7 = (value & BIT7);
 		value = value >> 1;
 		value |= (resetSB) ? 0: bit7;
 	}
