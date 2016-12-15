@@ -148,6 +148,7 @@ CPU::CPU(){
 	instructions[0x19] = &CPU::ADD_HL_DE;
 	instructions[0x29] = &CPU::ADD_HL_HL;
 	instructions[0x39] = &CPU::ADD_HL_SP;
+	instructions[0xE8] = &CPU::ADD_SP_n;
 
 	instructions[0x8F] = &CPU::ADC_A;
 	instructions[0x88] = &CPU::ADC_B;
@@ -178,7 +179,7 @@ CPU::CPU(){
 	instructions[0x9C] = &CPU::SBC_H;
 	instructions[0x9D] = &CPU::SBC_L;
 	instructions[0x9E] = &CPU::SBC_HL;
-	//instructions[0x00] = &CPU::SBC_n;
+	instructions[0xDE] = &CPU::SBC_n;
 
 	//XORs
 	instructions[0xAF] = &CPU::XOR_A;
@@ -1681,19 +1682,35 @@ int CPU::ADD_n() {
 }
 
 WORD CPU::Add16Bit(WORD operand1, WORD operand2) {
-	bool setHalfCarry = ((operand1 & 0x00FF) + (operand2 & 0x00FF) > 0x00FF);
+	bool setHalfCarry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF) > 0x0FFF);
 	WORD sum = operand1 + operand2;
-
-	if (sum == 0) {
-		setFlag(Flag::z);
-	}
-	else {
-		resetFlag(Flag::z);
-	}
 
 	resetFlag(Flag::n);
 
 	if (setHalfCarry) {
+		setFlag(Flag::h);
+	}
+	else {
+		resetFlag(Flag::h);
+	}
+
+	if (sum < operand1) {
+		setFlag(Flag::c);
+	}
+	else {
+		resetFlag(Flag::c);
+	}
+	
+	return sum;
+}
+
+WORD CPU::Add16BitSigned(WORD operand1, SIGNED_BYTE operand2) {
+	bool setHalfCarry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF) > 0x0FFF);
+	WORD sum = operand1 + operand2;
+
+	resetFlag(Flag::n);
+
+	if (setHalfCarry && (operand2 > 0)) {
 		setFlag(Flag::h);
 	}
 	else {
@@ -1732,6 +1749,16 @@ int CPU::ADD_HL_SP() {
 	this->HL.reg = Add16Bit(this->HL.reg, this->SP.reg);
 	Logger::LogInstruction("Add", "HL", "SP");
 	return 8;
+}
+
+int CPU::ADD_SP_n() {
+	SIGNED_BYTE immediate = this->memory.readByte(this->PC.reg);
+	this->PC.reg++;
+	this->SP.reg = Add16BitSigned(this->SP.reg, immediate);
+	resetFlag(Flag::z);
+	resetFlag(Flag::n);
+	Logger::LogInstruction("Add", "SP", "n");
+	return 16; 
 }
 
 
@@ -1795,18 +1822,18 @@ int CPU::ADC_n() {
 //Math instructions
 BYTE CPU::Subtract(BYTE from, BYTE sub, bool subCarryFlag) {
 	BYTE carry = (subCarryFlag) ? getFlag(Flag::c) : 0;
-	bool setHalfCarry = ((int)(from & 0x0F) - (int)((sub + carry) & 0x0F) < 0x00);
+	bool setHalfCarry = ((int)(from & 0x0F) - (int)((sub) & 0x0F) - (int)(carry) < 0x00);
 
-	if ((sub + carry) > from) {
+	BYTE total = from - sub - carry;
+
+	if (total > (from - carry)) {
 		setFlag(Flag::c);
 	}
 	else {
 		resetFlag(Flag::c);
 	}
 
-	from = from - sub - carry;
-
-	if (from == 0) {
+	if (total == 0) {
 		setFlag(Flag::z);
 	}
 	else {
@@ -1816,13 +1843,13 @@ BYTE CPU::Subtract(BYTE from, BYTE sub, bool subCarryFlag) {
 	setFlag(Flag::n);
 
 	if (setHalfCarry) {
-		resetFlag(Flag::h);
-	}
-	else {
 		setFlag(Flag::h);
 	}
+	else {
+		resetFlag(Flag::h);
+	}
 	
-	return from;
+	return total;
 }
 
 int CPU::SUB_A() {
@@ -1934,7 +1961,7 @@ int CPU::SBC_n() {
 	this->PC.reg++;
 	this->AF.hi = Subtract(this->AF.hi, value, true);
 	Logger::LogInstruction("Sbc", "imm", "");
-	return 4;
+	return 8;
 }
 
 

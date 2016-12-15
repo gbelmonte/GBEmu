@@ -168,7 +168,10 @@ class CPU{
 		int ADD_HL();
 		int ADD_n();
 
+		int ADD_SP_n();
+
 		WORD Add16Bit(WORD operand1, WORD operand2);
+		WORD Add16BitSigned(WORD operand1, SIGNED_BYTE operand2);
 		int ADD_HL_BC();
 		int ADD_HL_DE();
 		int ADD_HL_HL();
