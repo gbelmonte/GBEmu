@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string.h>
 
+using namespace std;
+
 // Cartridge 0 to 0x7FFF 32KB
 // Video Ram 0x8000 to 0x9FFF 8KB
 // External Ram 0xA000 to 0xBFFF 8KB
@@ -31,7 +33,7 @@ class Memory {
 		void writeByte(WORD address, BYTE value);
 		void writeWord(WORD address, WORD value);
 
-		bool LoadCartridge();
+		bool LoadCartridge(char* path);
 
 	private:
 		BYTE Rom[200000];

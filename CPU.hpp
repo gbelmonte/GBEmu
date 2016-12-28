@@ -15,7 +15,7 @@ class CPU{
 		CPU();
 		~CPU();
 
-		void LoadCartridge();
+		void LoadCartridge(char* path);
 		BYTE Fetch();
 		int DecodeExecute(BYTE opcode);
 		void UpdateScreen(int cycles);

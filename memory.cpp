@@ -157,10 +157,10 @@ void Memory::writeWord(WORD address, WORD value) {
 	//Not implemented
 }
 
-bool Memory::LoadCartridge(){
+bool Memory::LoadCartridge(char* path){
 	size_t result;
-
-	FILE * pFile = fopen("op_sp_hl.gb", "rb");
+	cout << path << endl;
+	FILE * pFile = fopen(path, "rb");
 	if (pFile == NULL) {
 		return false;
 	}

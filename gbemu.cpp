@@ -4,7 +4,7 @@ using namespace std;
 
 int main(int argc, char** argv){
 	CPU cpu;
-	cpu.LoadCartridge();
+	cpu.LoadCartridge(argv[1]);
 	Logger::InitLogger(false);
 
 	bool quit = false;

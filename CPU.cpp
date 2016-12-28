@@ -457,8 +457,8 @@ CPU::~CPU(){
 
 }
 
-void CPU::LoadCartridge(){
-	if (!this->memory.LoadCartridge()) {
+void CPU::LoadCartridge(char* path){
+	if (!this->memory.LoadCartridge(path)) {
 		cout << "Cartridge load failed";
 	}
 }
