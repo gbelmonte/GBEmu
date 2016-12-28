@@ -143,10 +143,9 @@ class CPU{
 		int LDH_A_FF00_n();
 		int LDHL_SP_n();
 
-		//Load Dec
+		//Load Dec/Inc
 		int LDD_HL_A();
 		int LDI_HL_A();
-
 		int LDD_A_HL();
 		int LDI_A_HL();
 
@@ -247,6 +246,7 @@ class CPU{
 		int OR_HL();
 		int OR_n();
 
+		int DAA();
 		int CPL();
 
 		int SCF();

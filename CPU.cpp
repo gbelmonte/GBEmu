@@ -216,6 +216,7 @@ CPU::CPU(){
 	instructions[0xF6] = &CPU::OR_n;
 
 	//Complement
+	instructions[0x27] = &CPU::DAA;
 	instructions[0x2F] = &CPU::CPL;
 
 	instructions[0x37] = &CPU::SCF;
@@ -1289,12 +1290,9 @@ int CPU::LDH_A_FF00_n() {
 }
 
 int CPU::LDHL_SP_n() {
-	WORD immediate = 0x00;
-	immediate |= this->memory.readByte(this->PC.reg);
+	SIGNED_BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
-	WORD value = Add16Bit(this->SP.reg, immediate);
-	resetFlag(Flag::z);
-	this->HL.reg = value;
+	this->HL.reg = Add16BitSigned(this->SP.reg, immediate);
 	Logger::LogInstruction("LDHL", "SP", "n");
 	return 12;
 }
@@ -1500,7 +1498,6 @@ WORD CPU::PopWord() {
 	WORD retVal = PopByte();
 	retVal = retVal << 8;
 	retVal = retVal | PopByte();
-	//cout << hex << "Pop value 0x" << (int)retVal << endl;
 	return retVal;
 }
 
@@ -1656,6 +1653,8 @@ int CPU::PUSH_HL() {
 
 int CPU::POP_AF() {
 	this->AF.reg = PopReg();
+	//Clear lower nibble of F reg because they can never be set
+	this->AF.lo = this->AF.lo & 0xF0;
 	Logger::LogInstruction("POP", "AF", "");
 	return 12;
 }
@@ -1847,19 +1846,22 @@ WORD CPU::Add16Bit(WORD operand1, WORD operand2) {
 }
 
 WORD CPU::Add16BitSigned(WORD operand1, SIGNED_BYTE operand2) {
-	bool setHalfCarry = ((operand1 & 0x0FFF) + (operand2 & 0x0FFF) > 0x0FFF);
+	bool setHalfCarry = ((operand1 & 0x000F) + (operand2 & 0x000F) & 0x00F0);
+	bool setCarry = ((operand1 & 0x00FF) + (operand2 & 0x00FF) & 0x0F00);
+
 	WORD sum = operand1 + operand2;
 
+	resetFlag(Flag::z);
 	resetFlag(Flag::n);
 
-	if (setHalfCarry && (operand2 > 0)) {
+	if (setHalfCarry) {
 		setFlag(Flag::h);
 	}
 	else {
 		resetFlag(Flag::h);
 	}
 
-	if (sum < operand1) {
+	if (setCarry) {
 		setFlag(Flag::c);
 	}
 	else {
@@ -1897,8 +1899,6 @@ int CPU::ADD_SP_n() {
 	SIGNED_BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
 	this->SP.reg = Add16BitSigned(this->SP.reg, immediate);
-	resetFlag(Flag::z);
-	resetFlag(Flag::n);
 	Logger::LogInstruction("Add", "SP", "n");
 	return 16; 
 }
@@ -2037,7 +2037,7 @@ int CPU::SUB_L() {
 }
 
 int CPU::SUB_HL() {
-	this->AF.hi = Subtract(this->AF.hi, this->memory.readByte(this->HL.hi));
+	this->AF.hi = Subtract(this->AF.hi, this->memory.readByte(this->HL.reg));
 	Logger::LogInstruction("Sub", "(HL)", "");
 	return 8;
 }
@@ -2093,7 +2093,7 @@ int CPU::SBC_L() {
 }
 
 int CPU::SBC_HL() {
-	this->AF.hi = Subtract(this->AF.hi, this->memory.readByte(this->HL.hi), true);
+	this->AF.hi = Subtract(this->AF.hi, this->memory.readByte(this->HL.reg), true);
 	Logger::LogInstruction("Sbc", "(HL)", "");
 	return 8;
 }
@@ -2319,6 +2319,11 @@ int CPU::OR_n() {
 	this->PC.reg++;
 	Logger::LogInstruction("Or", "imm", "");
 	return 8;
+}
+
+int CPU::DAA() {
+
+	return 4;
 }
 
 int CPU::CPL() {
