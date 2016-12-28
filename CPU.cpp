@@ -114,6 +114,7 @@ CPU::CPU(){
 	instructions[0x75] = &CPU::LD_HL_L;
 	instructions[0x36] = &CPU::LD_HL_n;
 
+	instructions[0xF2] = &CPU::LD_A_FF00_C;
 	instructions[0xe2] = &CPU::LD_FF00_C_A;
 	instructions[0xe0] = &CPU::LD_FF00_n_A;
 	instructions[0xF0] = &CPU::LDH_A_FF00_n;
@@ -1124,6 +1125,13 @@ int CPU::LD_HL_n() {
 	return 12;
 }
 
+int CPU::LD_A_FF00_C() {
+	WORD address = 0xFF00 + this->BC.lo;
+	BYTE value = this->memory.readByte(address);
+	this->AF.hi = value;
+	Logger::LogInstruction("LD", "A", "(FF00 + C)");
+	return 8;
+}
 
 int CPU::LD_FF00_C_A(){
 	WORD address = 0xFF00 + this->BC.lo;
@@ -1371,13 +1379,10 @@ WORD CPU::PopReg() {
 void CPU::PushByte(BYTE value) {
 	this->SP.reg--;
 	this->memory.writeByte(this->SP.reg, value);
-	//cout << hex << "PUSH SP: 0x" << (int)this->SP.reg << " value:" << (int)value << endl;
 }
 
 BYTE CPU::PopByte() {
-	//cout << hex << "sp 0x" << (int)this->SP.reg << endl;
 	BYTE retVal = this->memory.readByte(this->SP.reg);
-	//cout << hex << "POP SP: 0x" << (int)this->SP.reg << endl;
 	this->SP.reg++; 
 	return retVal;
 }
@@ -2909,6 +2914,130 @@ int CPU::BIT_7_HL() {
 	TestBit(byte, BIT7);
 	Logger::LogInstruction("Bit", "7", "(HL)");
 	return 4;
+}
+
+BYTE CPU::SetBit(BYTE byte, BYTE bitPos, BYTE value) {
+	BYTE bitMask = BIT0;
+	switch (bitPos) {
+		case 0: bitMask = BIT0; break;
+		case 1: bitMask = BIT1; break;
+		case 2: bitMask = BIT2; break;
+		case 3: bitMask = BIT3; break;
+		case 4: bitMask = BIT4; break;
+		case 5: bitMask = BIT5; break;
+		case 6: bitMask = BIT6; break;
+		case 7: bitMask = BIT7; break;
+	}
+
+	BYTE retVal = byte;
+	if (value > 0) {
+		retVal |= bitMask;
+	}
+	else {
+		retVal &= (~bitMask);
+	}
+
+	return retVal;
+}
+
+int CPU::SET_b_A() {
+	this->AF.hi = SetBit(this->AF.hi, 0, 1);
+	Logger::LogInstruction("SET", "0", "A");
+	return 8;
+}
+
+int CPU::SET_b_B() {
+	this->BC.hi = SetBit(this->BC.hi, 0, 1);
+	Logger::LogInstruction("SET", "0", "B");
+	return 8;
+}
+
+int CPU::SET_b_C() {
+	this->BC.lo = SetBit(this->BC.lo, 0, 1);
+	Logger::LogInstruction("SET", "0", "C");
+	return 8;
+}
+
+int CPU::SET_b_D() {
+	this->DE.hi = SetBit(this->DE.hi, 0, 1);
+	Logger::LogInstruction("SET", "0", "D");
+	return 8;
+}
+
+int CPU::SET_b_E() {
+	this->DE.lo = SetBit(this->DE.lo, 0, 1);
+	Logger::LogInstruction("SET", "0", "E");
+	return 8;
+}
+
+int CPU::SET_b_H() {
+	this->HL.hi = SetBit(this->HL.hi, 0, 1);
+	Logger::LogInstruction("SET", "0", "H");
+	return 8;
+}
+
+int CPU::SET_b_L() {
+	this->HL.lo = SetBit(this->HL.lo, 0, 1);
+	Logger::LogInstruction("SET", "0", "L");
+	return 8;
+}
+
+int CPU::SET_b_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = SetBit(value, 0, 1);
+	this->memory.writeByte(this->HL.reg, value);
+	Logger::LogInstruction("SET", "0", "(HL)");
+	return 16;
+}
+
+int CPU::RES_b_A() {
+	this->AF.hi = SetBit(this->AF.hi, 0, 0);
+	Logger::LogInstruction("RES", "0", "A");
+	return 8;
+}
+
+int CPU::RES_b_B() {
+	this->BC.hi = SetBit(this->BC.hi, 0, 0);
+	Logger::LogInstruction("RES", "0", "B");
+	return 8;
+}
+
+int CPU::RES_b_C() {
+	this->BC.lo = SetBit(this->BC.lo, 0, 0);
+	Logger::LogInstruction("RES", "0", "C");
+	return 8;
+}
+
+int CPU::RES_b_D() {
+	this->DE.hi = SetBit(this->DE.hi, 0, 0);
+	Logger::LogInstruction("RES", "0", "D");
+	return 8;
+}
+
+int CPU::RES_b_E() {
+	this->DE.lo = SetBit(this->DE.lo, 0, 0);
+	Logger::LogInstruction("RES", "0", "E");
+	return 8;
+}
+
+int CPU::RES_b_H() {
+	this->HL.hi = SetBit(this->HL.hi, 0, 0);
+	Logger::LogInstruction("RES", "0", "H");
+	return 8;
+}
+
+int CPU::RES_b_L() {
+	this->HL.lo = SetBit(this->HL.lo, 0, 0);
+	Logger::LogInstruction("RES", "0", "L");
+	return 8;
+}
+
+int CPU::RES_b_HL() {
+	BYTE value = this->memory.readByte(this->HL.reg);
+	value = SetBit(value, 0, 0);
+	this->memory.writeByte(this->HL.reg, value);
+	Logger::LogInstruction("RES", "0", "(HL)");
+	return 16;
 }
 
 BYTE CPU::SWAP(BYTE value) {

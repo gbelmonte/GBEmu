@@ -137,6 +137,7 @@ class CPU{
 		int LD_HL_L();
 		int LD_HL_n();
 
+		int LD_A_FF00_C();
 		int LD_FF00_C_A();
 		int LD_FF00_n_A();
 		int LDH_A_FF00_n();
@@ -418,6 +419,25 @@ class CPU{
 		int BIT_5_HL();
 		int BIT_6_HL();
 		int BIT_7_HL();
+
+		BYTE SetBit(BYTE byte, BYTE bitPos, BYTE value);
+		int SET_b_A();
+		int SET_b_B();
+		int SET_b_C();
+		int SET_b_D();
+		int SET_b_E();
+		int SET_b_H();
+		int SET_b_L();
+		int SET_b_HL();
+
+		int RES_b_A();
+		int RES_b_B();
+		int RES_b_C();
+		int RES_b_D();
+		int RES_b_E();
+		int RES_b_H();
+		int RES_b_L();
+		int RES_b_HL();
 
 		//Swap
 		BYTE SWAP(BYTE value);
