@@ -147,6 +147,7 @@ class CPU{
 		int LDD_HL_A();
 		int LDI_HL_A();
 
+		int LDD_A_HL();
 		int LDI_A_HL();
 
 		//16 bit loads

@@ -120,10 +120,10 @@ CPU::CPU(){
 	instructions[0xF0] = &CPU::LDH_A_FF00_n;
 	instructions[0xF8] = &CPU::LDHL_SP_n;
 
-	//Load Dec
+	//Load Dec/Inc
 	instructions[0x32] = &CPU::LDD_HL_A;
 	instructions[0x22] = &CPU::LDI_HL_A;
-
+	instructions[0x3A] = &CPU::LDD_A_HL;
 	instructions[0x2A] = &CPU::LDI_A_HL;
 
 	//16 bit load immediate
@@ -1303,6 +1303,13 @@ int CPU::LDD_HL_A(){
 	this->memory.writeByte(this->HL.reg, this->AF.hi);
 	this->HL.reg--;
 	Logger::LogInstruction("LDD", "(HL)", "A");
+	return 8;
+}
+
+int CPU::LDD_A_HL(){
+	this->AF.hi = this->memory.readByte(this->HL.reg);
+	this->HL.reg--;
+	Logger::LogInstruction("LDD", "A", "(HL)");
 	return 8;
 }
 
