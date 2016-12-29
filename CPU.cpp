@@ -2323,6 +2323,42 @@ int CPU::OR_n() {
 
 int CPU::DAA() {
 
+	WORD acc = this->AF.hi;
+
+	if (getFlag(Flag::n) == 1) {
+		if (getFlag(Flag::h) == 1) {
+			acc = (acc - 0x06) & 0xFF;
+		}
+
+		if (getFlag(Flag::c) == 1) {
+			acc -= 0x60;
+		} 
+	}
+	else {
+		if (getFlag(Flag::h) == 1 || (acc & 0x0F) > 9) {
+			acc += 0x06;
+		}
+
+		if (getFlag(Flag::c) == 1 || (acc > 0x9F)) {
+			acc += 0x60;
+		}
+	}
+
+	this->AF.hi = acc;
+
+	resetFlag(Flag::h);
+
+	if (acc >= 0x100) {
+		setFlag(Flag::c);
+	}
+
+	if (this->AF.hi == 0) {
+		setFlag(Flag::z);
+	}
+	else {
+		resetFlag(Flag::z);
+	}
+
 	return 4;
 }
 
