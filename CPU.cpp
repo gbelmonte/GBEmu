@@ -13,6 +13,8 @@ CPU::CPU(){
 	this->DE.reg = 0x00D8;
 	this->HL.reg = 0x014D;
 
+	this->interruptEnabled = false;
+	this->halt = false;
 	this->cycleCounter = 456;
 
 	//Init instructions
@@ -26,6 +28,7 @@ CPU::CPU(){
 
 	instructions[0x00] = &CPU::NOP;
 	instructions[0x10] = &CPU::STOP;
+	instructions[0x76] = &CPU::HALT;
 
 	instructions[0x3e] = &CPU::LD_A_n;
 	instructions[0x06] = &CPU::LD_B_n;
@@ -603,7 +606,14 @@ BYTE CPU::Fetch(){
 	}
 	//cout << hex << "AF: " << this->AF.reg << " BC: " << this->BC.reg << " DE: " << this->DE.reg << " HL: " << this->HL.reg << " SP: " << this->SP.reg << " Z: " << (int)getFlag(Flag::z) << " C: " << (int)getFlag(Flag::c) << " H: " << (int)getFlag(Flag::h) << " n " << (int)getFlag(Flag::n) << endl;
 	Logger::LogPC(this->PC.reg);
-	this->PC.reg = this->PC.reg + 1;
+
+	if (halt == false) {
+		this->PC.reg = this->PC.reg + 1;
+	}
+	else {
+		opcode = 0x00;
+	}
+	
 	return opcode;
 }
 
@@ -711,6 +721,58 @@ bool CPU::CheckInput(){
 	return this->gpu.CheckInput();
 }
 
+void CPU::HandleInterrupt() {
+
+	if (interruptEnabled) {
+		BYTE interruptFlag = this->memory.readByte(0xFF0F);
+		BYTE iEnabled = this->memory.readByte(0xFFFF);
+
+		if (interruptFlag > 0x00) {
+			Interrupt i = getInterrupt(interruptFlag, iEnabled);
+
+			if (i != Interrupt::None) {
+				this->interruptEnabled = false;
+
+				interruptFlag &= ~(i);
+				this->memory.writeByte(0xFF0F, interruptFlag);
+
+				PushWord(this->PC.reg);
+
+				switch(i) {
+					case Interrupt::VBlank: this->PC.reg = 0x40; break;
+					case Interrupt::LCDC: this->PC.reg = 0x48; break;
+					case Interrupt::TimerOverflow: this->PC.reg = 0x50; break;
+					case Interrupt::SerialTransfer: this->PC.reg = 0x58; break;
+					case Interrupt::Transition: this->PC.reg = 0x60; break;
+					default: break;
+				}
+			}
+		}
+	}
+}
+
+Interrupt CPU::getInterrupt(BYTE interruptFlag, BYTE enabled) {
+	Interrupt retVal = Interrupt::None;
+
+	if ((interruptFlag & Interrupt::VBlank) > 0) {
+		retVal = Interrupt::VBlank;
+	}
+	else if ((interruptFlag & Interrupt::LCDC) > 0) {
+		retVal = Interrupt::LCDC;
+	}
+	else if ((interruptFlag & Interrupt::TimerOverflow) > 0) {
+		retVal = Interrupt::TimerOverflow;
+	}
+	else if ((interruptFlag & Interrupt::SerialTransfer) > 0) {
+		retVal = Interrupt::SerialTransfer;
+	}
+	else if ((interruptFlag & Interrupt::Transition) > 0) {
+		retVal = Interrupt::Transition;
+	}
+
+	return retVal;
+}
+
 BYTE CPU::getFlag(Flag flag) {
 	BYTE retVal = 0x00;
 
@@ -769,6 +831,11 @@ int CPU::NOP() {
 }
 
 int CPU::STOP() {
+	return 4;
+}
+
+int CPU::HALT() {
+	halt = true;
 	return 4;
 }
 
@@ -1623,6 +1690,7 @@ int CPU::RET_C() {
 
 int CPU::RETI() {
 	this->PC.reg = PopReg();
+	this->interruptEnabled = true;
 	Logger::LogInstruction("RETI", "", "");
 	return 8;
 }
@@ -4420,11 +4488,13 @@ int CPU::SRL_HL() {
 }
 
 int CPU::DI() {
+	this->interruptEnabled = false;
 	Logger::LogInstruction("DI", "", "");
 	return 4;
 }
 
 int CPU::EI() {
+	this->interruptEnabled = true;
 	Logger::LogInstruction("EI", "", "");
 	return 4;
 }

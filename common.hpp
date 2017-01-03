@@ -35,4 +35,13 @@ enum Flag {
 	c
 };
 
+enum Interrupt {
+	None = 0x00,
+	VBlank = BIT0,
+	LCDC = BIT1,
+	TimerOverflow = BIT2,
+	SerialTransfer = BIT3,
+	Transition = BIT4
+};
+
 #endif

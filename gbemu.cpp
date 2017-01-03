@@ -19,6 +19,8 @@ int main(int argc, char** argv){
 
 		cpu.UpdateScreen(cycles);
 		quit = cpu.CheckInput();
+
+		cpu.HandleInterrupt();
 	}
 
 	return 0;

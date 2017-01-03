@@ -30,3 +30,7 @@
 gbemu
 *.gb
 *.bin
+
+# Other
+*.odt
+*.odt#

@@ -20,6 +20,7 @@ class CPU{
 		int DecodeExecute(BYTE opcode);
 		void UpdateScreen(int cycles);
 		bool CheckInput();
+		void HandleInterrupt();
 
 	private:
 		Register AF;
@@ -33,6 +34,8 @@ class CPU{
 		Memory memory;
 		GPU gpu;
 		int cycleCounter;
+		bool interruptEnabled;
+		bool halt;
 
 		bool debug;
 
@@ -41,6 +44,7 @@ class CPU{
 		int (CPU::*instructions_cb[300])();
 
 		void DrawLine();
+		Interrupt getInterrupt(BYTE interruptFlag, BYTE enabled);
 		BYTE getFlag(Flag flag);
 		void setFlag(Flag flag);
 		void resetFlag(Flag flag);
@@ -48,6 +52,7 @@ class CPU{
 		//instructions
 		int NOP();
 		int STOP();
+		int HALT();
 
 		//load immediates
 		int LD_A_n();
