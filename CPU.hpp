@@ -21,6 +21,7 @@ class CPU{
 		void UpdateScreen(int cycles);
 		bool CheckInput();
 		void HandleInterrupt();
+		void UpdateTimers(int cycles);
 
 	private:
 		Register AF;
@@ -33,7 +34,12 @@ class CPU{
 
 		Memory memory;
 		GPU gpu;
+
 		int cycleCounter;
+		int dividerCounter;
+		int timerCounter;
+		int timerFrequency;
+		
 		bool interruptEnabled;
 		bool halt;
 
@@ -44,7 +50,12 @@ class CPU{
 		int (CPU::*instructions_cb[300])();
 
 		void DrawLine();
+		void updateDividerTimer(int cycles);
+		void updateTimerFrequency();
+
 		Interrupt getInterrupt(BYTE interruptFlag, BYTE enabled);
+		void requestInterrupt(Interrupt interrupt);
+		
 		BYTE getFlag(Flag flag);
 		void setFlag(Flag flag);
 		void resetFlag(Flag flag);

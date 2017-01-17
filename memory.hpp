@@ -31,7 +31,7 @@ class Memory {
 		WORD readWord(WORD address);
 
 		void writeByte(WORD address, BYTE value);
-		void writeWord(WORD address, WORD value);
+		void incrementDividerRegister();
 
 		bool LoadCartridge(char* path);
 

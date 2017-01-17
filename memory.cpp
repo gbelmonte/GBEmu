@@ -148,13 +148,17 @@ void Memory::writeByte(WORD address, BYTE value) {
 	else if ((address >= 0xFEA0)  && (address < 0xFEFF)){
 		//Attempting to write to unwriteable memory
 	}
+	else if (address == 0xFF04) {
+		//Divider register resets when getting written to
+		this->Rom[address] = 0;
+	}
 	else {
 		this->Rom[address] = value;
 	}
 }
 
-void Memory::writeWord(WORD address, WORD value) {
-	//Not implemented
+void Memory::incrementDividerRegister() {
+	this->Rom[0xFF04]++;
 }
 
 bool Memory::LoadCartridge(char* path){

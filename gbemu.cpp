@@ -18,8 +18,10 @@ int main(int argc, char** argv){
 		int cycles = cpu.DecodeExecute(opcode);
 
 		cpu.UpdateScreen(cycles);
-		quit = cpu.CheckInput();
+		cpu.UpdateTimers(cycles);
 
+		quit = cpu.CheckInput();
+		
 		cpu.HandleInterrupt();
 	}
 

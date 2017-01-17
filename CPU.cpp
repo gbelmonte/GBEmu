@@ -16,6 +16,9 @@ CPU::CPU(){
 	this->interruptEnabled = false;
 	this->halt = false;
 	this->cycleCounter = 456;
+	this->dividerCounter = 0;
+	this->timerCounter = 0;
+	this->timerFrequency = 1024;
 
 	//Init instructions
 	for (int i = 0; i < (sizeof((instructions))/sizeof((instructions[0]))); i++ ){
@@ -721,6 +724,33 @@ bool CPU::CheckInput(){
 	return this->gpu.CheckInput();
 }
 
+void CPU::UpdateTimers(int cycles) {
+
+	updateDividerTimer(cycles);
+	updateTimerFrequency();
+
+	bool isTimerEnabled = (this->memory.readByte(0xFF07) & BIT2) > 0;
+	if (isTimerEnabled) {
+		timerCounter += cycles;
+
+		if (timerCounter >= timerFrequency) {
+			timerCounter = 0;
+
+			BYTE timer = this->memory.readByte(0xFF05);
+			if (timer == 255) {
+				BYTE resetTimerValue = this->memory.readByte(0xFF06);
+				this->memory.writeByte(0xFF05, resetTimerValue);
+				requestInterrupt(Interrupt::TimerOverflow);
+			}
+			else {
+				timer += 1;
+				this->memory.writeByte(0xFF05, timer);
+			}
+		}
+	}
+
+}
+
 void CPU::HandleInterrupt() {
 
 	if (interruptEnabled) {
@@ -741,7 +771,7 @@ void CPU::HandleInterrupt() {
 				switch(i) {
 					case Interrupt::VBlank: this->PC.reg = 0x40; break;
 					case Interrupt::LCDC: this->PC.reg = 0x48; break;
-					case Interrupt::TimerOverflow: this->PC.reg = 0x50; break;
+					case Interrupt::TimerOverflow: halt = false; this->PC.reg = 0x50; break;
 					case Interrupt::SerialTransfer: this->PC.reg = 0x58; break;
 					case Interrupt::Transition: this->PC.reg = 0x60; break;
 					default: break;
@@ -750,6 +780,35 @@ void CPU::HandleInterrupt() {
 		}
 	}
 }
+
+void CPU::updateDividerTimer(int cycles) {
+	dividerCounter += cycles;
+	if (dividerCounter >= 255) {
+		this->memory.incrementDividerRegister();
+		dividerCounter = 0;
+	}
+}
+
+void CPU::updateTimerFrequency() {
+	BYTE frequency = this->memory.readByte(0xFF07);
+	BYTE frequencyMask = (BIT1 & BIT0);
+	frequency = frequency & frequencyMask;
+
+	int newFrequency = timerFrequency;
+	switch(frequency) {
+		case 0: newFrequency = 1024; break;
+		case 1:	newFrequency = 16; break;
+		case 2:	newFrequency = 64; break;
+		case 3:	newFrequency = 256; break;
+	}
+
+	if (newFrequency != timerFrequency) {
+		timerFrequency = newFrequency;
+		timerCounter = 0;
+	}
+}
+
+
 
 Interrupt CPU::getInterrupt(BYTE interruptFlag, BYTE enabled) {
 	Interrupt retVal = Interrupt::None;
@@ -771,6 +830,12 @@ Interrupt CPU::getInterrupt(BYTE interruptFlag, BYTE enabled) {
 	}
 
 	return retVal;
+}
+
+void CPU::requestInterrupt(Interrupt interrupt) {
+	BYTE interruptFlag = this->memory.readByte(0xFF0F);
+	interruptFlag |= (BYTE)interrupt;
+	this->memory.writeByte(0xFF0F, interruptFlag);
 }
 
 BYTE CPU::getFlag(Flag flag) {
