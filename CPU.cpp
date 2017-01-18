@@ -15,6 +15,7 @@ CPU::CPU(){
 
 	this->interruptEnabled = false;
 	this->halt = false;
+	this->quit = false;
 	this->cycleCounter = 456;
 	this->dividerCounter = 0;
 	this->timerCounter = 0;
@@ -721,7 +722,11 @@ void CPU::DrawLine() {
 }
 
 bool CPU::CheckInput(){
-	return this->gpu.CheckInput();
+	this->quit = this->gpu.CheckInput();
+}
+
+bool CPU::IsOn() {
+	return !(this->quit);
 }
 
 void CPU::UpdateTimers(int cycles) {

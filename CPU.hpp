@@ -22,6 +22,7 @@ class CPU{
 		bool CheckInput();
 		void HandleInterrupt();
 		void UpdateTimers(int cycles);
+		bool IsOn();
 
 	private:
 		Register AF;
@@ -42,6 +43,7 @@ class CPU{
 		
 		bool interruptEnabled;
 		bool halt;
+		bool quit;
 
 		bool debug;
 
