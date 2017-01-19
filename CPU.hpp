@@ -296,9 +296,7 @@ class CPU{
 		int JP_HL();
 
 		//Stack instructions
-		void PushWord(WORD value);
 		void PushReg(WORD reg);
-		WORD PopWord();
 		WORD PopReg();
 		void PushByte(BYTE value);
 		BYTE PopByte();

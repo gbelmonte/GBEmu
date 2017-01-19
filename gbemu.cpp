@@ -20,7 +20,7 @@ int main(int argc, char** argv){
 
 	SDL_RemoveTimer(timerID);
 	SDL_Quit();
-	
+
 	return 0;
 }
 

@@ -757,10 +757,10 @@ void CPU::UpdateTimers(int cycles) {
 }
 
 void CPU::HandleInterrupt() {
+	BYTE interruptFlag = this->memory.readByte(0xFF0F);
+	BYTE iEnabled = this->memory.readByte(0xFFFF);
 
 	if (interruptEnabled) {
-		BYTE interruptFlag = this->memory.readByte(0xFF0F);
-		BYTE iEnabled = this->memory.readByte(0xFFFF);
 
 		if (interruptFlag > 0x00) {
 			Interrupt i = getInterrupt(interruptFlag, iEnabled);
@@ -770,17 +770,27 @@ void CPU::HandleInterrupt() {
 
 				interruptFlag &= ~(i);
 				this->memory.writeByte(0xFF0F, interruptFlag);
-
-				PushWord(this->PC.reg);
+				
+				PushReg(this->PC.reg);
 
 				switch(i) {
 					case Interrupt::VBlank: this->PC.reg = 0x40; break;
 					case Interrupt::LCDC: this->PC.reg = 0x48; break;
-					case Interrupt::TimerOverflow: halt = false; this->PC.reg = 0x50; break;
+					case Interrupt::TimerOverflow: 
+						halt = false; 
+						this->PC.reg = 0x50; 
+						break;
 					case Interrupt::SerialTransfer: this->PC.reg = 0x58; break;
 					case Interrupt::Transition: this->PC.reg = 0x60; break;
 					default: break;
 				}
+			}
+		}
+	}
+	else {
+		if (halt == true) {
+			if ((interruptFlag & iEnabled) > 0) {
+				halt = false;
 			}
 		}
 	}
@@ -796,7 +806,7 @@ void CPU::updateDividerTimer(int cycles) {
 
 void CPU::updateTimerFrequency() {
 	BYTE frequency = this->memory.readByte(0xFF07);
-	BYTE frequencyMask = (BIT1 & BIT0);
+	BYTE frequencyMask = (BIT1 | BIT0);
 	frequency = frequency & frequencyMask;
 
 	int newFrequency = timerFrequency;
@@ -817,6 +827,8 @@ void CPU::updateTimerFrequency() {
 
 Interrupt CPU::getInterrupt(BYTE interruptFlag, BYTE enabled) {
 	Interrupt retVal = Interrupt::None;
+
+	interruptFlag = interruptFlag & enabled;
 
 	if ((interruptFlag & Interrupt::VBlank) > 0) {
 		retVal = Interrupt::VBlank;
@@ -1617,25 +1629,11 @@ int CPU::JP_HL() {
 	return 4;
 }
 
-void CPU::PushWord(WORD value) {
-	BYTE lo = value & 0x00FF;
-	BYTE hi = value >> 8;
-	PushByte(lo);
-	PushByte(hi);
-}
-
 void CPU::PushReg(WORD value) {
 	BYTE lo = value & 0x00FF;
 	BYTE hi = value >> 8;
 	PushByte(hi);
 	PushByte(lo);
-}
-
-WORD CPU::PopWord() {
-	WORD retVal = PopByte();
-	retVal = retVal << 8;
-	retVal = retVal | PopByte();
-	return retVal;
 }
 
 WORD CPU::PopReg() {
