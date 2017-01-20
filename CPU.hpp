@@ -19,6 +19,7 @@ class CPU{
 		BYTE Fetch();
 		int DecodeExecute(BYTE opcode);
 		void UpdateScreen(int cycles);
+		void RenderScreen();
 		bool CheckInput();
 		void HandleInterrupt();
 		void UpdateTimers(int cycles);

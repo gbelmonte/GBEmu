@@ -47,5 +47,7 @@ Uint32 ExecuteFrame(Uint32 interval, void *param) {
 		cyclesThisFrame += cycles;
 	}
 
+	cpu->RenderScreen();
+
 	return interval;
 }

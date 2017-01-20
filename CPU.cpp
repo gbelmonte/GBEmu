@@ -661,8 +661,7 @@ void CPU::UpdateScreen(int cycles) {
 			cycleCounter = 456;
 
 			if (line == 144) {
-				this->gpu.UpdateScreen();
-				cout << "DRAW SCREEN VRAM" << endl;
+				//cout << "DRAW SCREEN VRAM" << endl;
 			}
 			else if((line > 144) && (line <= 153)) {
 				//in V-Blank
@@ -680,6 +679,10 @@ void CPU::UpdateScreen(int cycles) {
 			}
 		}
 	}
+}
+
+void CPU::RenderScreen() {
+	this->gpu.UpdateScreen();
 }
 
 void CPU::DrawLine() {
