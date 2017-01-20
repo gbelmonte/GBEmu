@@ -52,15 +52,15 @@ void GPU::UpdateScreen() {
 	
 	for (int y = 0; y < 144; y++) {
 		for(int x = 0; x < 160; x++) {
-			if (screen[x][y] > 0) {
-				SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
-				SDL_RenderDrawPoint(renderer, x, y);
+
+			switch(screen[x][y]) {
+				case 0:	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF); break;
+				case 1:	SDL_SetRenderDrawColor(renderer, 0xD3, 0xD3, 0xD3, 0xFF); break;
+				case 2:	SDL_SetRenderDrawColor(renderer, 0xA9, 0xA9, 0xA9, 0xFF); break;
+				case 3:	SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF); break;
 			}
-			else {
-				SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-				SDL_RenderDrawPoint(renderer, x, y);
-			}
-				
+			
+			SDL_RenderDrawPoint(renderer, x, y);				
 		}
 	}
 

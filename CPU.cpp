@@ -654,14 +654,14 @@ void CPU::UpdateScreen(int cycles) {
 	
 	if ((lcdRegister & BIT7) > 0) {
 		cycleCounter -= cycles;
-		//cout << "lcd on. Cycle: " << (int)cycleCounter << endl;
+		
 		if (cycleCounter <= 0) {
 			BYTE line = this->memory.readByte(0xFF44);
 			cout << hex << "Line: " << (int)line;
 			cycleCounter = 456;
 
 			if (line == 144) {
-				//cout << "DRAW SCREEN VRAM" << endl;
+
 			}
 			else if((line > 144) && (line <= 153)) {
 				//in V-Blank
@@ -715,11 +715,12 @@ void CPU::DrawLine() {
 		BYTE colorValue = GetBit(tileDataRow2, xBit);
 		colorValue = (colorValue << 1) | GetBit(tileDataRow, xBit);
 
+
 		switch(colorValue){
-			case 0: this->gpu.screen[xPixel][yPixel] = 0; break;
-			case 1:
-			case 2:
-			case 3: this->gpu.screen[xPixel][yPixel] = 1; break;
+			case 0: this->gpu.screen[xPixel][yPixel] = (this->memory.readByte(0xFF47) & (BIT1 | BIT0)); break;
+			case 1:	this->gpu.screen[xPixel][yPixel] = ((this->memory.readByte(0xFF47) & (BIT3 | BIT2)) >> 2); break;
+			case 2:	this->gpu.screen[xPixel][yPixel] = ((this->memory.readByte(0xFF47) & (BIT5 | BIT4)) >> 4); break;
+			case 3: this->gpu.screen[xPixel][yPixel] = ((this->memory.readByte(0xFF47) & (BIT7 | BIT6)) >> 6); break;
 		}
 	}
 }
