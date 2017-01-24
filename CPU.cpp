@@ -657,7 +657,6 @@ void CPU::UpdateScreen(int cycles) {
 		
 		if (cycleCounter <= 0) {
 			BYTE line = this->memory.readByte(0xFF44);
-			cout << hex << "Line: " << (int)line;
 			cycleCounter = 456;
 
 			if (line == 144) {
@@ -990,7 +989,6 @@ int CPU::LD_A_A() {
 int CPU::LD_A_B() {
 	this->AF.hi = this->BC.hi;
 	Logger::LogInstruction("LD", "A", "B");
-	cout << hex << "B = " << (int)this->BC.hi << endl;
 	return 4;
 }
 
@@ -1528,7 +1526,7 @@ int CPU::JR_NZ() {
 	Logger::LogInstruction("JR", "NZ", "");
 	if (getFlag(Flag::z) == 0) {
 		this->PC.reg += offset;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		Logger::Log("Jump taken");
 	}
 	return 8;
 }
@@ -1539,7 +1537,7 @@ int CPU::JR_Z() {
 	Logger::LogInstruction("JR", "Z", "");
 	if (getFlag(Flag::z) == 1) {
 		this->PC.reg += offset;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		Logger::Log("Jump taken");
 	}
 	return 8;
 }
@@ -1550,7 +1548,7 @@ int CPU::JR_NC() {
 	Logger::LogInstruction("JR", "NC", "");
 	if (getFlag(Flag::c) == 0) {
 		this->PC.reg += offset;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		Logger::Log("Jump taken");
 	}
 	return 8;
 }
@@ -1561,7 +1559,7 @@ int CPU::JR_C() {
 	Logger::LogInstruction("JR", "C", "");
 	if (getFlag(Flag::c) == 1) {
 		this->PC.reg += offset;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		Logger::Log("Jump taken");
 	}
 	return 8;
 }
@@ -1571,7 +1569,7 @@ int CPU::JR() {
 	this->PC.reg++;
 	Logger::LogInstruction("JR", "", "");
 	this->PC.reg += offset;
-	cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+	Logger::Log("Jump taken");
 	return 8;
 }
 
@@ -1588,7 +1586,7 @@ int CPU::JP_NZ() {
 	Logger::LogInstruction("JP", "NZ", "");
 	if (getFlag(Flag::z) == 0) {
 		this->PC.reg = address;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		Logger::Log("Jump taken");
 	}
 	return 12;
 }
@@ -1599,7 +1597,7 @@ int CPU::JP_Z() {
 	Logger::LogInstruction("JP", "Z", "");
 	if (getFlag(Flag::z) == 1) {
 		this->PC.reg = address;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		Logger::Log("Jump taken");
 	}
 	return 12;
 }
@@ -1610,7 +1608,7 @@ int CPU::JP_NC() {
 	Logger::LogInstruction("JP", "NC", "");
 	if (getFlag(Flag::c) == 0) {
 		this->PC.reg = address;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		Logger::Log("Jump taken");
 	}
 	return 12;
 }
@@ -1621,7 +1619,7 @@ int CPU::JP_C() {
 	Logger::LogInstruction("JP", "C", "");
 	if (getFlag(Flag::c) == 1) {
 		this->PC.reg = address;
-		cout << hex << "Jump taken to 0x" << (int)this->PC.reg << endl;
+		Logger::Log("Jump taken");
 	}
 	return 12;
 }
@@ -1676,7 +1674,7 @@ int CPU::CALL_NZ_nn() {
 	if (getFlag(Flag::z) == 0) {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
-		cout << hex << "Call taken to 0x" << (int) this->PC.reg << endl;
+		Logger::Log("Call taken");
 	}
 	return 12;
 }
@@ -1688,7 +1686,7 @@ int CPU::CALL_Z_nn() {
 	if (getFlag(Flag::z) == 1) {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
-		cout << hex << "Call taken to 0x" << (int) this->PC.reg << endl;
+		Logger::Log("Call taken");
 	}
 	return 12;
 }
@@ -1700,7 +1698,7 @@ int CPU::CALL_NC_nn() {
 	if (getFlag(Flag::c) == 0) {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
-		cout << hex << "Call taken to 0x" << (int) this->PC.reg << endl;
+		Logger::Log("Call taken");
 	}
 	return 12;
 }
@@ -1712,7 +1710,7 @@ int CPU::CALL_C_nn() {
 	if (getFlag(Flag::c) == 1) {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
-		cout << hex << "Call taken to 0x" << (int) this->PC.reg << endl;
+		Logger::Log("Call taken");
 	}
 	return 12;
 }
@@ -1728,7 +1726,7 @@ int CPU::RET_NZ() {
 	Logger::LogInstruction("RET", "NZ", "");
 	if (getFlag(Flag::z) == 0) {
 		this->PC.reg = PopReg();
-		cout << hex << "Ret taken to 0x" << (int) this->PC.reg << endl;
+		Logger::Log("Ret taken");
 	}
 	return 8;
 }
@@ -1737,7 +1735,7 @@ int CPU::RET_Z() {
 	Logger::LogInstruction("RET", "Z", "");
 	if (getFlag(Flag::z) == 1) {
 		this->PC.reg = PopReg();
-		cout << hex << "Ret taken to 0x" << (int) this->PC.reg << endl;
+		Logger::Log("Ret taken");
 	}
 	return 8;
 }
@@ -1746,7 +1744,7 @@ int CPU::RET_NC() {
 	Logger::LogInstruction("RET", "NC", "");
 	if (getFlag(Flag::c) == 0) {
 		this->PC.reg = PopReg();
-		cout << hex << "Ret taken to 0x" << (int) this->PC.reg << endl;
+		Logger::Log("Ret taken");
 	}
 	return 8;
 }
@@ -1755,7 +1753,7 @@ int CPU::RET_C() {
 	Logger::LogInstruction("RET", "C", "");
 	if (getFlag(Flag::c) == 1) {
 		this->PC.reg = PopReg();
-		cout << hex << "Ret taken to 0x" << (int) this->PC.reg << endl;
+		Logger::Log("Ret taken");
 	}
 	return 8;
 }
