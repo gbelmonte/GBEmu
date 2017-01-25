@@ -739,24 +739,25 @@ void CPU::UpdateTimers(int cycles) {
 
 	bool isTimerEnabled = (this->memory.readByte(0xFF07) & BIT2) > 0;
 	if (isTimerEnabled) {
-		timerCounter += cycles;
+		this->timerCounter += cycles;
 
-		if (timerCounter >= timerFrequency) {
-			timerCounter = 0;
+		while (this->timerCounter >= timerFrequency) {
+			this->timerCounter -= timerFrequency;
 
 			BYTE timer = this->memory.readByte(0xFF05);
 			if (timer == 255) {
 				BYTE resetTimerValue = this->memory.readByte(0xFF06);
+				//cout << hex << "reset timer value: " << (int) resetTimerValue << endl;
 				this->memory.writeByte(0xFF05, resetTimerValue);
 				requestInterrupt(Interrupt::TimerOverflow);
 			}
 			else {
 				timer += 1;
+				//cout << hex << "Timer value: " << (int) timer << "   TimerCounter value: " << (int) this->timerCounter << endl;
 				this->memory.writeByte(0xFF05, timer);
 			}
 		}
 	}
-
 }
 
 void CPU::HandleInterrupt() {
@@ -822,7 +823,7 @@ void CPU::updateTimerFrequency() {
 
 	if (newFrequency != timerFrequency) {
 		timerFrequency = newFrequency;
-		timerCounter = 0;
+		this->timerCounter = 0;
 	}
 }
 
@@ -1527,6 +1528,7 @@ int CPU::JR_NZ() {
 	if (getFlag(Flag::z) == 0) {
 		this->PC.reg += offset;
 		Logger::Log("Jump taken");
+		return 12;
 	}
 	return 8;
 }
@@ -1538,6 +1540,7 @@ int CPU::JR_Z() {
 	if (getFlag(Flag::z) == 1) {
 		this->PC.reg += offset;
 		Logger::Log("Jump taken");
+		return 12;
 	}
 	return 8;
 }
@@ -1549,6 +1552,7 @@ int CPU::JR_NC() {
 	if (getFlag(Flag::c) == 0) {
 		this->PC.reg += offset;
 		Logger::Log("Jump taken");
+		return 12;
 	}
 	return 8;
 }
@@ -1560,6 +1564,7 @@ int CPU::JR_C() {
 	if (getFlag(Flag::c) == 1) {
 		this->PC.reg += offset;
 		Logger::Log("Jump taken");
+		return 12;
 	}
 	return 8;
 }
@@ -1570,14 +1575,14 @@ int CPU::JR() {
 	Logger::LogInstruction("JR", "", "");
 	this->PC.reg += offset;
 	Logger::Log("Jump taken");
-	return 8;
+	return 12;
 }
 
 int CPU::JP_nn() {
 	WORD address = this->memory.readWord(this->PC.reg);
 	Logger::LogInstruction("JP", "nn", "");
 	this->PC.reg = address;
-	return 12;
+	return 16;
 }
 
 int CPU::JP_NZ() {
@@ -1587,6 +1592,7 @@ int CPU::JP_NZ() {
 	if (getFlag(Flag::z) == 0) {
 		this->PC.reg = address;
 		Logger::Log("Jump taken");
+		return 16;
 	}
 	return 12;
 }
@@ -1598,6 +1604,7 @@ int CPU::JP_Z() {
 	if (getFlag(Flag::z) == 1) {
 		this->PC.reg = address;
 		Logger::Log("Jump taken");
+		return 16;
 	}
 	return 12;
 }
@@ -1609,6 +1616,7 @@ int CPU::JP_NC() {
 	if (getFlag(Flag::c) == 0) {
 		this->PC.reg = address;
 		Logger::Log("Jump taken");
+		return 16;
 	}
 	return 12;
 }
@@ -1620,6 +1628,7 @@ int CPU::JP_C() {
 	if (getFlag(Flag::c) == 1) {
 		this->PC.reg = address;
 		Logger::Log("Jump taken");
+		return 16;
 	}
 	return 12;
 }
@@ -1664,7 +1673,7 @@ int CPU::CALL_nn() {
 	PushReg(this->PC.reg);
 	this->PC.reg = immediate;
 	Logger::LogInstruction("Call", "nn", "");
-	return 12;
+	return 24;
 }
 
 int CPU::CALL_NZ_nn() {
@@ -1675,6 +1684,7 @@ int CPU::CALL_NZ_nn() {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
 		Logger::Log("Call taken");
+		return 24;
 	}
 	return 12;
 }
@@ -1687,6 +1697,7 @@ int CPU::CALL_Z_nn() {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
 		Logger::Log("Call taken");
+		return 24;
 	}
 	return 12;
 }
@@ -1699,6 +1710,7 @@ int CPU::CALL_NC_nn() {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
 		Logger::Log("Call taken");
+		return 24;
 	}
 	return 12;
 }
@@ -1711,6 +1723,7 @@ int CPU::CALL_C_nn() {
 		PushReg(this->PC.reg);
 		this->PC.reg = immediate;
 		Logger::Log("Call taken");
+		return 24;
 	}
 	return 12;
 }
@@ -1719,7 +1732,7 @@ int CPU::CALL_C_nn() {
 int CPU::RET() {
 	this->PC.reg = PopReg();
 	Logger::LogInstruction("RET", "", "");
-	return 8;
+	return 16;
 }
 
 int CPU::RET_NZ() {
@@ -1727,6 +1740,7 @@ int CPU::RET_NZ() {
 	if (getFlag(Flag::z) == 0) {
 		this->PC.reg = PopReg();
 		Logger::Log("Ret taken");
+		return 20;
 	}
 	return 8;
 }
@@ -1736,6 +1750,7 @@ int CPU::RET_Z() {
 	if (getFlag(Flag::z) == 1) {
 		this->PC.reg = PopReg();
 		Logger::Log("Ret taken");
+		return 20;
 	}
 	return 8;
 }
@@ -1745,6 +1760,7 @@ int CPU::RET_NC() {
 	if (getFlag(Flag::c) == 0) {
 		this->PC.reg = PopReg();
 		Logger::Log("Ret taken");
+		return 20;
 	}
 	return 8;
 }
@@ -1754,6 +1770,7 @@ int CPU::RET_C() {
 	if (getFlag(Flag::c) == 1) {
 		this->PC.reg = PopReg();
 		Logger::Log("Ret taken");
+		return 20;
 	}
 	return 8;
 }
@@ -1762,7 +1779,7 @@ int CPU::RETI() {
 	this->PC.reg = PopReg();
 	this->interruptEnabled = true;
 	Logger::LogInstruction("RETI", "", "");
-	return 8;
+	return 16;
 }
 
 int CPU::PUSH_AF() {
@@ -1819,56 +1836,56 @@ int CPU::RST_00() {
 	PushReg(this->PC.reg);
 	this->PC.reg = 0x0000;
 	Logger::LogInstruction("RST", "00", "");
-	return 32;
+	return 16;
 }
 
 int CPU::RST_08() {
 	PushReg(this->PC.reg);
 	this->PC.reg = 0x0008;
 	Logger::LogInstruction("RST", "08", "");
-	return 32;
+	return 16;
 }
 
 int CPU::RST_10() {
 	PushReg(this->PC.reg);
 	this->PC.reg = 0x0010;
 	Logger::LogInstruction("RST", "10", "");
-	return 32;
+	return 16;
 }
 
 int CPU::RST_18() {
 	PushReg(this->PC.reg);
 	this->PC.reg = 0x0018;
 	Logger::LogInstruction("RST", "18", "");
-	return 32;
+	return 16;
 }
 
 int CPU::RST_20() {
 	PushReg(this->PC.reg);
 	this->PC.reg = 0x0020;
 	Logger::LogInstruction("RST", "20", "");
-	return 32;
+	return 16;
 }
 
 int CPU::RST_28() {
 	PushReg(this->PC.reg);
 	this->PC.reg = 0x0028;
 	Logger::LogInstruction("RST", "28", "");
-	return 32;
+	return 16;
 }
 
 int CPU::RST_30() {
 	PushReg(this->PC.reg);
 	this->PC.reg = 0x0030;
 	Logger::LogInstruction("RST", "30", "");
-	return 32;
+	return 16;
 }
 
 int CPU::RST_38() {
 	PushReg(this->PC.reg);
 	this->PC.reg = 0x0038;
 	Logger::LogInstruction("RST", "38", "");
-	return 32;
+	return 16;
 }
 
 
@@ -2850,386 +2867,386 @@ BYTE CPU::GetBit(BYTE value, int bitPos) {
 int CPU::BIT_0_A() {
 	TestBit(this->AF.hi, BIT0);
 	Logger::LogInstruction("Bit", "0", "A");
-	return 4;
+	return 8;
 } 
 
 int CPU::BIT_1_A() {
 	TestBit(this->AF.hi, BIT1);
 	Logger::LogInstruction("Bit", "1", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_2_A() {
 	TestBit(this->AF.hi, BIT2);
 	Logger::LogInstruction("Bit", "2", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_3_A() {
 	TestBit(this->AF.hi, BIT3);
 	Logger::LogInstruction("Bit", "3", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_4_A() {
 	TestBit(this->AF.hi, BIT4);
 	Logger::LogInstruction("Bit", "4", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_5_A() {
 	TestBit(this->AF.hi, BIT5);
 	Logger::LogInstruction("Bit", "5", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_6_A() {
 	TestBit(this->AF.hi, BIT6);
 	Logger::LogInstruction("Bit", "6", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_7_A() {
 	TestBit(this->AF.hi, BIT7);
 	Logger::LogInstruction("Bit", "7", "A");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_0_B() {
 	TestBit(this->BC.hi, BIT0);
 	Logger::LogInstruction("Bit", "0", "B");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_1_B() {
 	TestBit(this->BC.hi, BIT1);
 	Logger::LogInstruction("Bit", "1", "B");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_2_B() {
 	TestBit(this->BC.hi, BIT2);
 	Logger::LogInstruction("Bit", "2", "B");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_3_B() {
 	TestBit(this->BC.hi, BIT3);
 	Logger::LogInstruction("Bit", "3", "B");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_4_B() {
 	TestBit(this->BC.hi, BIT4);
 	Logger::LogInstruction("Bit", "4", "B");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_5_B() {
 	TestBit(this->BC.hi, BIT5);
 	Logger::LogInstruction("Bit", "5", "B");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_6_B() {
 	TestBit(this->BC.hi, BIT6);
 	Logger::LogInstruction("Bit", "6", "B");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_7_B() {
 	TestBit(this->BC.hi, BIT7);
 	Logger::LogInstruction("Bit", "7", "B");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_0_C() {
 	TestBit(this->BC.lo, BIT0);
 	Logger::LogInstruction("Bit", "0", "C");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_1_C() {
 	TestBit(this->BC.lo, BIT1);
 	Logger::LogInstruction("Bit", "1", "C");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_2_C() {
 	TestBit(this->BC.lo, BIT2);
 	Logger::LogInstruction("Bit", "2", "C");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_3_C() {
 	TestBit(this->BC.lo, BIT3);
 	Logger::LogInstruction("Bit", "3", "C");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_4_C() {
 	TestBit(this->BC.lo, BIT4);
 	Logger::LogInstruction("Bit", "4", "C");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_5_C() {
 	TestBit(this->BC.lo, BIT5);
 	Logger::LogInstruction("Bit", "5", "C");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_6_C() {
 	TestBit(this->BC.lo, BIT6);
 	Logger::LogInstruction("Bit", "6", "C");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_7_C() {
 	TestBit(this->BC.lo, BIT7);
 	Logger::LogInstruction("Bit", "7", "C");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_0_D() {
 	TestBit(this->DE.hi, BIT0);
 	Logger::LogInstruction("Bit", "0", "D");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_1_D() {
 	TestBit(this->DE.hi, BIT1);
 	Logger::LogInstruction("Bit", "1", "D");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_2_D() {
 	TestBit(this->DE.hi, BIT2);
 	Logger::LogInstruction("Bit", "2", "D");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_3_D() {
 	TestBit(this->DE.hi, BIT3);
 	Logger::LogInstruction("Bit", "3", "D");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_4_D() {
 	TestBit(this->DE.hi, BIT4);
 	Logger::LogInstruction("Bit", "4", "D");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_5_D() {
 	TestBit(this->DE.hi, BIT5);
 	Logger::LogInstruction("Bit", "5", "D");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_6_D() {
 	TestBit(this->DE.hi, BIT6);
 	Logger::LogInstruction("Bit", "6", "D");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_7_D() {
 	TestBit(this->DE.hi, BIT7);
 	Logger::LogInstruction("Bit", "7", "D");
-	return 4;
+	return 8;
 }
  
 int CPU::BIT_0_E() {
 	TestBit(this->DE.lo, BIT0);
 	Logger::LogInstruction("Bit", "0", "E");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_1_E() {
 	TestBit(this->DE.lo, BIT1);
 	Logger::LogInstruction("Bit", "1", "E");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_2_E() {
 	TestBit(this->DE.lo, BIT2);
 	Logger::LogInstruction("Bit", "2", "E");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_3_E() {
 	TestBit(this->DE.lo, BIT3);
 	Logger::LogInstruction("Bit", "3", "E");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_4_E() {
 	TestBit(this->DE.lo, BIT4);
 	Logger::LogInstruction("Bit", "4", "E");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_5_E() {
 	TestBit(this->DE.lo, BIT5);
 	Logger::LogInstruction("Bit", "5", "E");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_6_E() {
 	TestBit(this->DE.lo, BIT6);
 	Logger::LogInstruction("Bit", "6", "E");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_7_E() {
 	TestBit(this->DE.lo, BIT7);
 	Logger::LogInstruction("Bit", "7", "E");
-	return 4;
+	return 8;
 }
  
 int CPU::BIT_0_H() {
 	TestBit(this->HL.hi, BIT0);
 	Logger::LogInstruction("Bit", "0", "H");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_1_H() {
 	TestBit(this->HL.hi, BIT1);
 	Logger::LogInstruction("Bit", "1", "H");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_2_H() {
 	TestBit(this->HL.hi, BIT2);
 	Logger::LogInstruction("Bit", "2", "H");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_3_H() {
 	TestBit(this->HL.hi, BIT3);
 	Logger::LogInstruction("Bit", "3", "H");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_4_H() {
 	TestBit(this->HL.hi, BIT4);
 	Logger::LogInstruction("Bit", "4", "H");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_5_H() {
 	TestBit(this->HL.hi, BIT5);
 	Logger::LogInstruction("Bit", "5", "H");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_6_H() {
 	TestBit(this->HL.hi, BIT6);
 	Logger::LogInstruction("Bit", "6", "H");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_7_H() {
 	TestBit(this->HL.hi, BIT7);
 	Logger::LogInstruction("Bit", "7", "H");
-	return 4;
+	return 8;
 }
  
 int CPU::BIT_0_L() {
 	TestBit(this->HL.lo, BIT0);
 	Logger::LogInstruction("Bit", "0", "L");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_1_L() {
 	TestBit(this->HL.lo, BIT1);
 	Logger::LogInstruction("Bit", "1", "L");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_2_L() {
 	TestBit(this->HL.lo, BIT2);
 	Logger::LogInstruction("Bit", "2", "L");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_3_L() {
 	TestBit(this->HL.lo, BIT3);
 	Logger::LogInstruction("Bit", "3", "L");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_4_L() {
 	TestBit(this->HL.lo, BIT4);
 	Logger::LogInstruction("Bit", "4", "L");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_5_L() {
 	TestBit(this->HL.lo, BIT5);
 	Logger::LogInstruction("Bit", "5", "L");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_6_L() {
 	TestBit(this->HL.lo, BIT6);
 	Logger::LogInstruction("Bit", "6", "L");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_7_L() {
 	TestBit(this->HL.lo, BIT7);
 	Logger::LogInstruction("Bit", "7", "L");
-	return 4;
+	return 8;
 }
 
 int CPU::BIT_0_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT0);
 	Logger::LogInstruction("Bit", "0", "(HL)");
-	return 4;
+	return 12;
 }
 int CPU::BIT_1_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT1);
 	Logger::LogInstruction("Bit", "1", "(HL)");
-	return 4;
+	return 12;
 }
 int CPU::BIT_2_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT2);
 	Logger::LogInstruction("Bit", "2", "(HL)");
-	return 4;
+	return 12;
 }
 int CPU::BIT_3_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT3);
 	Logger::LogInstruction("Bit", "3", "(HL)");
-	return 4;
+	return 12;
 }
 int CPU::BIT_4_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT4);
 	Logger::LogInstruction("Bit", "4", "(HL)");
-	return 4;
+	return 12;
 }
 int CPU::BIT_5_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT5);
 	Logger::LogInstruction("Bit", "5", "(HL)");
-	return 4;
+	return 12;
 }
 int CPU::BIT_6_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT6);
 	Logger::LogInstruction("Bit", "6", "(HL)");
-	return 4;
+	return 12;
 }
 int CPU::BIT_7_HL() {
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT7);
 	Logger::LogInstruction("Bit", "7", "(HL)");
-	return 4;
+	return 12;
 }
 
 BYTE CPU::SetBit(BYTE byte, BYTE bitMask, BYTE value) {
