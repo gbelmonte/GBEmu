@@ -18,8 +18,6 @@ class CPU{
 		void LoadCartridge(char* path);
 		void Run();
 
-		static Uint32 ExecuteFrame(Uint32 interval, void *param);
-
 	private:
 		Register AF;
 		Register BC;
@@ -48,26 +46,36 @@ class CPU{
 		int (CPU::*instructions[300])();
 		int (CPU::*instructions_cb[300])();
 
+		static Uint32 ExecuteFrame(Uint32 interval, void *param);
+
 		BYTE Fetch();
 		int DecodeExecute(BYTE opcode);
-		void UpdateScreen(int cycles);
-		void RenderScreen();
-		bool CheckInput();
-		void HandleInterrupt();
-		void UpdateTimers(int cycles);
-		void UpdateCPUCycles(int cycles);
+		
 		bool IsOn();
-
+		bool CheckInput();
+		void UpdateCPUCycles(int cycles);
+		
+		//Screen
+		void UpdateScreen(int cycles);
 		void DrawLine();
+
+		//Timer
+		void UpdateTimers(int cycles);
 		void updateDividerTimer(int cycles);
 		void updateTimerFrequency();
 
+		//Interrupt
+		void HandleInterrupt();
 		Interrupt getInterrupt(BYTE interruptFlag, BYTE enabled);
 		void requestInterrupt(Interrupt interrupt);
 		
+		//Flags
 		BYTE getFlag(Flag flag);
 		void setFlag(Flag flag);
 		void resetFlag(Flag flag);
+
+		void initInstructions();
+		void initCBInstructions();
 
 		//instructions
 		int NOP();
