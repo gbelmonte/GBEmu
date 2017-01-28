@@ -61,6 +61,10 @@ BYTE Memory::readByte(WORD address) {
 		retVal = this->Ram[ramAddress + (this->RamBank * 0x2000)];
 		//cout << hex << "RAM HIT: address: " << (int)address << " RamBank: " << (int)this->RamBank << " Value: " << (int)retVal << endl;
 	}
+	else if (address == 0xFF00) {
+		retVal = this->Rom[address];
+		retVal |= 0x0F;
+	}
 	else {
 		retVal = this->Rom[address];
 	}

@@ -566,7 +566,7 @@ int CPU::LDI_HL_A(){
 int CPU::LDI_A_HL() {
 	this->AF.hi = this->memory.readByte(this->HL.reg);
 	this->HL.reg++;
-	Logger::LogInstruction("LDI", "A", "(HL");
+	Logger::LogInstruction("LDI", "A", "(HL)");
 	return 8;
 }
 

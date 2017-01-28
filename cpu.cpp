@@ -136,7 +136,7 @@ void CPU::UpdateScreen(int cycles) {
 			cycleCounter = 456;
 
 			if (line == 144) {
-
+				requestInterrupt(Interrupt::VBlank);
 			}
 			else if((line > 144) && (line <= 153)) {
 				//in V-Blank
