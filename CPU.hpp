@@ -16,14 +16,9 @@ class CPU{
 		~CPU();
 
 		void LoadCartridge(char* path);
-		BYTE Fetch();
-		int DecodeExecute(BYTE opcode);
-		void UpdateScreen(int cycles);
-		void RenderScreen();
-		bool CheckInput();
-		void HandleInterrupt();
-		void UpdateTimers(int cycles);
-		bool IsOn();
+		void Run();
+
+		static Uint32 ExecuteFrame(Uint32 interval, void *param);
 
 	private:
 		Register AF;
@@ -37,6 +32,7 @@ class CPU{
 		Memory memory;
 		GPU gpu;
 
+		int cyclesThisFrame;
 		int cycleCounter;
 		int dividerCounter;
 		int timerCounter;
@@ -45,12 +41,22 @@ class CPU{
 		bool interruptEnabled;
 		bool halt;
 		bool quit;
-
 		bool debug;
 
+		SDL_TimerID timerID;
 
 		int (CPU::*instructions[300])();
 		int (CPU::*instructions_cb[300])();
+
+		BYTE Fetch();
+		int DecodeExecute(BYTE opcode);
+		void UpdateScreen(int cycles);
+		void RenderScreen();
+		bool CheckInput();
+		void HandleInterrupt();
+		void UpdateTimers(int cycles);
+		void UpdateCPUCycles(int cycles);
+		bool IsOn();
 
 		void DrawLine();
 		void updateDividerTimer(int cycles);

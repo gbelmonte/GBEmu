@@ -593,12 +593,52 @@ CPU::CPU(){
 }
 
 CPU::~CPU(){
-
+	SDL_RemoveTimer(this->timerID);
+	SDL_Quit();
 }
 
 void CPU::LoadCartridge(char* path){
 	if (!this->memory.LoadCartridge(path)) {
 		cout << "Cartridge load failed";
+	}
+}
+
+Uint32 CPU::ExecuteFrame(Uint32 interval, void *param) {
+	CPU* cpu = (CPU*) param;
+
+	cpu->cyclesThisFrame = 0;
+	while (cpu->cyclesThisFrame < 69905) {
+
+		//Fetch
+		BYTE opcode = cpu->Fetch();
+		Logger::LogOpcode(opcode);
+
+		//DecodeExecute
+		int cycles = cpu->DecodeExecute(opcode);
+
+		cpu->UpdateScreen(cycles);
+		cpu->UpdateTimers(cycles);
+
+		cpu->CheckInput();	
+		cpu->HandleInterrupt();
+
+		cpu->cyclesThisFrame += cycles;
+	}
+
+	cpu->RenderScreen();
+
+	return interval;
+}
+
+void CPU::Run() {
+	if( SDL_Init( SDL_INIT_TIMER ) < 0 ) { 
+		cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << endl;
+	}
+
+	this->timerID = SDL_AddTimer(16, ExecuteFrame, this);
+
+	while(this->IsOn()) {
+
 	}
 }
 
@@ -827,6 +867,11 @@ void CPU::updateTimerFrequency() {
 	}
 }
 
+void CPU::UpdateCPUCycles(int cycles) {
+	this->UpdateScreen(cycles);
+	this->UpdateTimers(cycles);
+	this->cyclesThisFrame += cycles;
+}
 
 
 Interrupt CPU::getInterrupt(BYTE interruptFlag, BYTE enabled) {
@@ -1044,9 +1089,10 @@ int CPU::LD_A_HL() {
 int CPU::LD_A_nn() {
 	WORD address = this->memory.readWord(this->PC.reg);
 	this->PC.reg += 2;
+	UpdateCPUCycles(8);
 	this->AF.hi = this->memory.readByte(address);
 	Logger::LogInstruction("LD", "A", "nn");
-	return 16;
+	return 8;
 }
 
 int CPU::LD_B_B() {
@@ -1352,10 +1398,11 @@ int CPU::LD_DE_A() {
 
 int CPU::LD_nn_A() {
 	WORD immediate = this->memory.readWord(this->PC.reg);
+	UpdateCPUCycles(8);
 	this->PC.reg+=2;
 	this->memory.writeByte(immediate, this->AF.hi);
 	Logger::LogInstruction("LD", "(nn)", "A");
-	return 16;
+	return 8;
 }
 
 int CPU::LD_HL_A() {
@@ -1402,10 +1449,11 @@ int CPU::LD_HL_L() {
 
 int CPU::LD_HL_n() {
 	BYTE value = this->memory.readByte(this->PC.reg);
+	UpdateCPUCycles(4);
 	this->PC.reg++;
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("LD", "(HL)", "imm");
-	return 12;
+	return 8;
 }
 
 int CPU::LD_A_FF00_C() {
@@ -1425,20 +1473,22 @@ int CPU::LD_FF00_C_A(){
 
 int CPU::LD_FF00_n_A(){
 	BYTE immediate = this->memory.readByte(this->PC.reg);
+	UpdateCPUCycles(4);
 	this->PC.reg++;
 	WORD address = 0xFF00 + immediate;
 	this->memory.writeByte(address, this->AF.hi);
 	Logger::LogInstruction("LD", "($FF00 + imm)", "A");
-	return 12;
+	return 8;
 }
 
 int CPU::LDH_A_FF00_n() {
 	BYTE immediate = this->memory.readByte(this->PC.reg);
 	this->PC.reg++;
+	UpdateCPUCycles(4);
 	WORD address = 0xFF00 + immediate;
 	this->AF.hi = this->memory.readByte(address);
 	Logger::LogInstruction("LDH", "A", "($FF00 + imm)");
-	return 12;
+	return 8;
 }
 
 int CPU::LDHL_SP_n() {
@@ -2700,9 +2750,10 @@ int CPU::INC_L() {
 int CPU::INC_MEM_HL() {
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = RegInc(value);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("Inc", "(HL)", "");
-	return 12;
+	return 8;
 }
 
 int CPU::INC_BC() {
@@ -2798,9 +2849,10 @@ int CPU::DEC_L() {
 int CPU::DEC_MEM_HL() {
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = RegDec(value);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("Dec", "(HL)", "");
-	return 12;
+	return 8;
 }
 
 int CPU::DEC_BC() {
@@ -3201,52 +3253,60 @@ int CPU::BIT_7_L() {
 }
 
 int CPU::BIT_0_HL() {
+	UpdateCPUCycles(4);
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT0);
 	Logger::LogInstruction("Bit", "0", "(HL)");
-	return 12;
+	return 8;
 }
 int CPU::BIT_1_HL() {
+	UpdateCPUCycles(4);
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT1);
 	Logger::LogInstruction("Bit", "1", "(HL)");
-	return 12;
+	return 8;
 }
 int CPU::BIT_2_HL() {
+	UpdateCPUCycles(4);
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT2);
 	Logger::LogInstruction("Bit", "2", "(HL)");
-	return 12;
+	return 8;
 }
 int CPU::BIT_3_HL() {
+	UpdateCPUCycles(4);
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT3);
 	Logger::LogInstruction("Bit", "3", "(HL)");
-	return 12;
+	return 8;
 }
 int CPU::BIT_4_HL() {
+	UpdateCPUCycles(4);
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT4);
 	Logger::LogInstruction("Bit", "4", "(HL)");
-	return 12;
+	return 8;
 }
 int CPU::BIT_5_HL() {
+	UpdateCPUCycles(4);
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT5);
 	Logger::LogInstruction("Bit", "5", "(HL)");
-	return 12;
+	return 8;
 }
 int CPU::BIT_6_HL() {
+	UpdateCPUCycles(4);
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT6);
 	Logger::LogInstruction("Bit", "6", "(HL)");
-	return 12;
+	return 8;
 }
 int CPU::BIT_7_HL() {
+	UpdateCPUCycles(4);
 	BYTE byte = this->memory.readByte(this->HL.reg);
 	TestBit(byte, BIT7);
 	Logger::LogInstruction("Bit", "7", "(HL)");
-	return 12;
+	return 8;
 }
 
 BYTE CPU::SetBit(BYTE byte, BYTE bitMask, BYTE value) {
@@ -3598,67 +3658,83 @@ int CPU::SET_7_L() {
 }
 
 int CPU::SET_0_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT0, 1);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SET", "0", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::SET_1_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT1, 1);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SET", "1", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::SET_2_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT2, 1);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SET", "2", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::SET_3_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT3, 1);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SET", "3", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::SET_4_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT4, 1);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SET", "4", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::SET_5_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT5, 1);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SET", "5", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::SET_6_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT6, 1);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SET", "6", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::SET_7_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT7, 1);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SET", "7", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::RES_0_A() {
@@ -3998,67 +4074,83 @@ int CPU::RES_7_L() {
 }
 
 int CPU::RES_0_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT0, 0);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RES", "0", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::RES_1_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT1, 0);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RES", "1", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::RES_2_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT2, 0);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RES", "2", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::RES_3_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT3, 0);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RES", "3", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::RES_4_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT4, 0);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RES", "4", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::RES_5_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT5, 0);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RES", "5", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::RES_6_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT6, 0);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RES", "6", "(HL)");
-	return 16;
+	return 8;
 }
 
 int CPU::RES_7_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SetBit(value, BIT7, 0);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RES", "7", "(HL)");
-	return 16;
+	return 8;
 }
 
 BYTE CPU::SWAP(BYTE value) {
@@ -4118,10 +4210,12 @@ int CPU::SWAP_L() {
 }
 
 int CPU::SWAP_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = SWAP(value);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
-	return 16;
+	return 8;
 }
 
 BYTE CPU::Rotate(BYTE value, Direction direction, bool fromC) {
@@ -4203,11 +4297,13 @@ int CPU::RLC_L() {
 }
 
 int CPU::RLC_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = Rotate(value, Direction::left, false);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RLC", "(HL)", "");
-	return 16;
+	return 8;
 }
 
 int CPU::RLA() {
@@ -4281,11 +4377,13 @@ int CPU::RL_L() {
 }
 
 int CPU::RL_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = Rotate(value, Direction::left);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RL", "(HL)", "");
-	return 16;
+	return 8;
 }
 
 int CPU::RRC_A() {
@@ -4331,11 +4429,13 @@ int CPU::RRC_L() {
 }
 
 int CPU::RRC_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = Rotate(value, Direction::right, false);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RRC", "(HL)", "");
-	return 16;
+	return 8;
 }
 
 int CPU::RR_A() {
@@ -4381,11 +4481,13 @@ int CPU::RR_L() {
 }
 
 int CPU::RR_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = Rotate(value, Direction::right);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("RR", "(HL)", "");
-	return 16;
+	return 8;
 }
 
 BYTE CPU::Shift(BYTE value, Direction direction, bool resetSB) {
@@ -4467,11 +4569,13 @@ int CPU::SLA_L() {
 }
 
 int CPU::SLA_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = Shift(value, Direction::left);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SLA", "(HL)", "");
-	return 16;
+	return 8;
 }
 
 int CPU::SRA_A() {
@@ -4517,11 +4621,13 @@ int CPU::SRA_L() {
 }
 
 int CPU::SRA_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = Shift(value, Direction::right, false);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SRA", "(HL)", "");
-	return 16;
+	return 8;
 }
 
 int CPU::SRL_A() {
@@ -4567,11 +4673,13 @@ int CPU::SRL_L() {
 }
 
 int CPU::SRL_HL() {
+	UpdateCPUCycles(4);
 	BYTE value = this->memory.readByte(this->HL.reg);
 	value = Shift(value, Direction::right);
+	UpdateCPUCycles(4);
 	this->memory.writeByte(this->HL.reg, value);
 	Logger::LogInstruction("SRL", "(HL)", "");
-	return 16;
+	return 8;
 }
 
 int CPU::DI() {
