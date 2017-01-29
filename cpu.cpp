@@ -195,33 +195,58 @@ void CPU::DrawSprites() {
 		if (spriteSize > 0) {
 			ySize = 16;
 		}
-		BYTE yLine = this->memory.readByte(0xFF44);
+		int yLine = (int)this->memory.readByte(0xFF44);
 
 		for (int i = 0; i < 40; i++) {
 			WORD spriteAddress = 0xFE00 + (i*4);
 
-			int yPosition = (int)this->memory.readByte(spriteAddress) - ySize;
+			int yPosition = (int)this->memory.readByte(spriteAddress) - 16;
 
-			if ((yLine >= yPosition) && (yLine <= (yPosition+ySize))) {
+			if ((yLine >= yPosition) && (yLine < (yPosition+ySize))) {
 				int xPosition = (int)this->memory.readByte(spriteAddress + 1) - 8;
 				
-				if (xPosition >= 0 && xPosition <= 160) {
+				if (xPosition >= -7 && xPosition <= 153) {
 					
 					BYTE patternNumber = this->memory.readByte(spriteAddress + 2);
-					patternNumber &= ~(BIT0);
+					if (ySize == 16) {
+						patternNumber &= ~(BIT0);
+					}
+					
 					BYTE spriteFlags = this->memory.readByte(spriteAddress + 3);
 
-					BYTE paletteFlag = GetBit(spriteFlags, BIT4);
+					BYTE paletteFlag = GetBit(spriteFlags, 4);
 					WORD paletteAddress = paletteFlag ? 0xFF49 : 0xFF48;
 
-					//0x8000: start of sprite pattern table
-					BYTE row = (yLine - yPosition) * 2;
-					BYTE tileDataRow = this->memory.readByte(0x8000 + (16*patternNumber) + row);
-					BYTE tileDataRow2 = this->memory.readByte(0x8000 + (16*patternNumber) + row + 1);
-					for (int x = xPosition; x < (xPosition + 8); x++) {
+					BYTE priorityOverBG = GetBit(spriteFlags, 7);
+					BYTE yFlip = GetBit(spriteFlags, 6);
+					BYTE xFlip = GetBit(spriteFlags, 5);
 
-						BYTE color = getPixelColor(tileDataRow, tileDataRow2, x - xPosition, paletteAddress);
-						this->gpu.screen[x][yLine - ySize] = color;
+					//0x8000: start of sprite pattern table
+					BYTE row = (yLine - yPosition);
+					if (yFlip > 0) {
+						row = ySize - row;
+					}
+					row = row * 2;
+
+					WORD tileDataAddress = 0x8000 + (16*patternNumber) + row;
+					BYTE tileDataRow = this->memory.readByte(tileDataAddress);
+					BYTE tileDataRow2 = this->memory.readByte(tileDataAddress + 1);
+					for (int x = xPosition; x < (xPosition + 8); x++) {
+						if (x >= 0 && x <= 160) {
+							int pixelXBit = x - xPosition;
+							if (xFlip > 0) {
+								pixelXBit = 7 - pixelXBit;
+							}
+							BYTE color = getPixelColor(tileDataRow, tileDataRow2, pixelXBit, paletteAddress);
+
+							BYTE pixelValue = this->gpu.screen[x][yLine];
+							if (color == 0) {
+
+							}
+							else if (priorityOverBG == 0 || pixelValue == 0) {
+								this->gpu.screen[x][yLine] = color;
+							}
+						}
 					}
 				}			
 			}
