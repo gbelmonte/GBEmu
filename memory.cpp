@@ -156,6 +156,13 @@ void Memory::writeByte(WORD address, BYTE value) {
 		//Divider register resets when getting written to
 		this->Rom[address] = 0;
 	}
+	else if (address == 0xFF46) {
+		WORD dmaAddress = value << 8;
+		for (int i = 0; i < 0xA0; i++) {
+			BYTE dmaValue = readByte(dmaAddress + i);
+			this->Rom[0xFE00 + i] = dmaValue;
+		}
+	}
 	else {
 		this->Rom[address] = value;
 	}

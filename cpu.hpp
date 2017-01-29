@@ -58,6 +58,7 @@ class CPU{
 		//Screen
 		void UpdateScreen(int cycles);
 		void DrawLine();
+		void DrawSprites();
 
 		//Timer
 		void UpdateTimers(int cycles);

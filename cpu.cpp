@@ -143,6 +143,7 @@ void CPU::UpdateScreen(int cycles) {
 			}
 			else {
 				DrawLine();
+				DrawSprites();
 			}
 
 			line++;
@@ -194,6 +195,59 @@ void CPU::DrawLine() {
 			case 3: this->gpu.screen[xPixel][yPixel] = ((this->memory.readByte(0xFF47) & (BIT7 | BIT6)) >> 6); break;
 		}
 	}
+}
+
+void CPU::DrawSprites() {
+
+	BYTE lcdRegister = this->memory.readByte(0xFF40);
+	if (lcdRegister & BIT1 > 0) {
+
+		BYTE spriteSize = lcdRegister & BIT2;
+		int ySize = 8;
+		if (spriteSize > 0) {
+			ySize = 16;
+		}
+		BYTE yLine = this->memory.readByte(0xFF44);
+
+		for (int i = 0; i < 40; i++) {
+			WORD spriteAddress = 0xFE00 + (i*4);
+
+			int yPosition = (int)this->memory.readByte(spriteAddress) - ySize;
+
+			if ((yLine >= yPosition) && (yLine <= (yPosition+ySize))) {
+				int xPosition = (int)this->memory.readByte(spriteAddress + 1) - 8;
+				
+				if (xPosition >= 0 && xPosition <= 160) {
+					
+					BYTE patternNumber = this->memory.readByte(spriteAddress + 2);
+					patternNumber &= ~(BIT0);
+					BYTE spriteFlags = this->memory.readByte(spriteAddress + 3);
+
+					//0x8000: start of sprite pattern table
+					BYTE row = (yLine - yPosition) * 2;
+					BYTE tileDataRow = this->memory.readByte(0x8000 + (16*patternNumber) + row);
+					BYTE tileDataRow2 = this->memory.readByte(0x8000 + (16*patternNumber) + row + 1);
+					for (int x = xPosition; x < (xPosition + 8); x++) {
+					
+						int xBit = x - xPosition;
+						xBit -= 7;
+						xBit *= -1;
+
+						BYTE colorValue = GetBit(tileDataRow2, xBit);
+						colorValue = (colorValue << 1) | GetBit(tileDataRow, xBit);
+
+						switch(colorValue){
+							case 0: this->gpu.screen[x][yLine-ySize] = (this->memory.readByte(0xFF48) & (BIT1 | BIT0)); break;
+							case 1:	this->gpu.screen[x][yLine-ySize] = ((this->memory.readByte(0xFF48) & (BIT3 | BIT2)) >> 2); break;
+							case 2:	this->gpu.screen[x][yLine-ySize] = ((this->memory.readByte(0xFF48) & (BIT5 | BIT4)) >> 4); break;
+							case 3: this->gpu.screen[x][yLine-ySize] = ((this->memory.readByte(0xFF48) & (BIT7 | BIT6)) >> 6); break;
+						}
+					}
+				}			
+			}
+		}
+	}
+
 }
 
 bool CPU::CheckInput(){
