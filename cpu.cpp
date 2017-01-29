@@ -180,20 +180,8 @@ void CPU::DrawLine() {
 		BYTE tileDataRow = this->memory.readByte(0x8000 + (tileNumber*16) + row);
 		BYTE tileDataRow2 = this->memory.readByte(0x8000 + (tileNumber*16) + row + 1);
 			
-		int xBit = xPixelColumn % 8;
-		xBit -= 7;
-		xBit *= -1;
-
-		BYTE colorValue = GetBit(tileDataRow2, xBit);
-		colorValue = (colorValue << 1) | GetBit(tileDataRow, xBit);
-
-
-		switch(colorValue){
-			case 0: this->gpu.screen[xPixel][yPixel] = (this->memory.readByte(0xFF47) & (BIT1 | BIT0)); break;
-			case 1:	this->gpu.screen[xPixel][yPixel] = ((this->memory.readByte(0xFF47) & (BIT3 | BIT2)) >> 2); break;
-			case 2:	this->gpu.screen[xPixel][yPixel] = ((this->memory.readByte(0xFF47) & (BIT5 | BIT4)) >> 4); break;
-			case 3: this->gpu.screen[xPixel][yPixel] = ((this->memory.readByte(0xFF47) & (BIT7 | BIT6)) >> 6); break;
-		}
+		BYTE color = getPixelColor(tileDataRow, tileDataRow2, xPixelColumn % 8, 0xFF47);
+		this->gpu.screen[xPixel][yPixel] = color;
 	}
 }
 
@@ -223,31 +211,44 @@ void CPU::DrawSprites() {
 					patternNumber &= ~(BIT0);
 					BYTE spriteFlags = this->memory.readByte(spriteAddress + 3);
 
+					BYTE paletteFlag = GetBit(spriteFlags, BIT4);
+					WORD paletteAddress = paletteFlag ? 0xFF49 : 0xFF48;
+
 					//0x8000: start of sprite pattern table
 					BYTE row = (yLine - yPosition) * 2;
 					BYTE tileDataRow = this->memory.readByte(0x8000 + (16*patternNumber) + row);
 					BYTE tileDataRow2 = this->memory.readByte(0x8000 + (16*patternNumber) + row + 1);
 					for (int x = xPosition; x < (xPosition + 8); x++) {
-					
-						int xBit = x - xPosition;
-						xBit -= 7;
-						xBit *= -1;
 
-						BYTE colorValue = GetBit(tileDataRow2, xBit);
-						colorValue = (colorValue << 1) | GetBit(tileDataRow, xBit);
-
-						switch(colorValue){
-							case 0: this->gpu.screen[x][yLine-ySize] = (this->memory.readByte(0xFF48) & (BIT1 | BIT0)); break;
-							case 1:	this->gpu.screen[x][yLine-ySize] = ((this->memory.readByte(0xFF48) & (BIT3 | BIT2)) >> 2); break;
-							case 2:	this->gpu.screen[x][yLine-ySize] = ((this->memory.readByte(0xFF48) & (BIT5 | BIT4)) >> 4); break;
-							case 3: this->gpu.screen[x][yLine-ySize] = ((this->memory.readByte(0xFF48) & (BIT7 | BIT6)) >> 6); break;
-						}
+						BYTE color = getPixelColor(tileDataRow, tileDataRow2, x - xPosition, paletteAddress);
+						this->gpu.screen[x][yLine - ySize] = color;
 					}
 				}			
 			}
 		}
 	}
 
+}
+
+BYTE CPU::getPixelColor(BYTE tileDataRow, BYTE tileDataRow2, int bitPosition, WORD paletteAddress) {
+
+	bitPosition -= 7;
+	bitPosition *= -1;
+
+	BYTE colorValue = GetBit(tileDataRow2, bitPosition);
+	colorValue = (colorValue << 1) | GetBit(tileDataRow, bitPosition);
+
+	BYTE colorPalette = this->memory.readByte(paletteAddress);
+
+	BYTE color = 0;
+	switch(colorValue){
+		case 0: color = (colorPalette & (BIT1 | BIT0)); break;
+		case 1:	color = ((colorPalette & (BIT3 | BIT2)) >> 2); break;
+		case 2:	color = ((colorPalette & (BIT5 | BIT4)) >> 4); break;
+		case 3: color = ((colorPalette & (BIT7 | BIT6)) >> 6); break;
+	}
+
+	return color;
 }
 
 bool CPU::CheckInput(){
