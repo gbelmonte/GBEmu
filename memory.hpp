@@ -31,6 +31,8 @@ class Memory {
 		WORD readWord(WORD address);
 
 		void writeByte(WORD address, BYTE value);
+		
+
 		void incrementDividerRegister();
 
 		bool LoadCartridge(char* path);
@@ -45,4 +47,6 @@ class Memory {
 		bool RamEnabled;
 		int RomBank;
 		int RamBank;
+
+		void changeBank(WORD address, BYTE value);
 };

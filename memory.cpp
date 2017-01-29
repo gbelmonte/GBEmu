@@ -83,7 +83,45 @@ WORD Memory::readWord(WORD address) {
 
 void Memory::writeByte(WORD address, BYTE value) {
 
-	if (this->type == CartridgeType::Rom_MBC1) {
+	changeBank(address, value);
+
+	if(address < 0x8000) {
+		//Attempting to write to unwriteable memory
+	}
+	//Write to ram bank
+	else if ((address >= 0xA000) && (address < 0xC000)) {
+		if (this->RamEnabled) {
+			WORD ramAddress = address - 0xA000;
+			this->Ram[ramAddress + (RamBank*0x2000)] = value;
+		}
+	}
+	else if (address >= 0xE000 && address < 0xFE00) {
+		//Attempting to write to ECHO ram, so write to both Work ram
+		this->Rom[address] = value;
+		this->Rom[address - 0x2000] = value;
+	}
+	else if ((address >= 0xFEA0)  && (address < 0xFEFF)){
+		//Attempting to write to unwriteable memory
+	}
+	else if (address == 0xFF04) {
+		//Divider register resets when getting written to
+		this->Rom[address] = 0;
+	}
+	else if (address == 0xFF46) {
+		WORD dmaAddress = value << 8;
+		for (int i = 0; i < 0xA0; i++) {
+			BYTE dmaValue = readByte(dmaAddress + i);
+			this->Rom[0xFE00 + i] = dmaValue;
+		}
+	}
+	else {
+		this->Rom[address] = value;
+	}
+}
+
+void Memory::changeBank(WORD address, BYTE value) {
+
+	if (this->type == CartridgeType::Rom_MBC1 && address >= 0x00 && address < 0x8000) {
 		//Turn Ram off/on
 		if(address >= 0x0 && address <= 0x1FFF) {
 			BYTE lowerNibble = value & 0x0F;
@@ -132,39 +170,6 @@ void Memory::writeByte(WORD address, BYTE value) {
 				this->RomMode = false;
 			}
 		}
-	}
-
-	if(address < 0x8000) {
-		//Attempting to write to unwriteable memory
-	}
-	//Write to ram bank
-	else if ((address >= 0xA000) && (address < 0xC000)) {
-		if (this->RamEnabled) {
-			WORD ramAddress = address - 0xA000;
-			this->Ram[ramAddress + (RamBank*0x2000)] = value;
-		}
-	}
-	else if (address >= 0xE000 && address < 0xFE00) {
-		//Attempting to write to ECHO ram, so write to both Work ram
-		this->Rom[address] = value;
-		this->Rom[address - 0x2000] = value;
-	}
-	else if ((address >= 0xFEA0)  && (address < 0xFEFF)){
-		//Attempting to write to unwriteable memory
-	}
-	else if (address == 0xFF04) {
-		//Divider register resets when getting written to
-		this->Rom[address] = 0;
-	}
-	else if (address == 0xFF46) {
-		WORD dmaAddress = value << 8;
-		for (int i = 0; i < 0xA0; i++) {
-			BYTE dmaValue = readByte(dmaAddress + i);
-			this->Rom[0xFE00 + i] = dmaValue;
-		}
-	}
-	else {
-		this->Rom[address] = value;
 	}
 }
 
