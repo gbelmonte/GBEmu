@@ -60,6 +60,7 @@ class CPU{
 		void DrawLine();
 		void DrawSprites();
 		BYTE getPixelColor(BYTE tileDataRow, BYTE tileDataRow2, int bitPosition, WORD paletteAddress);
+		BYTE getPixelColor(WORD paletteAddress, BYTE colorValue);
 
 		//Timer
 		void UpdateTimers(int cycles);
