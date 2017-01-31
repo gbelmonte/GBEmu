@@ -30,7 +30,6 @@ CPU::CPU(){
 
 CPU::~CPU(){
 	SDL_RemoveTimer(this->timerID);
-	SDL_Quit();
 }
 
 void CPU::LoadCartridge(char* path){
@@ -67,9 +66,6 @@ Uint32 CPU::ExecuteFrame(Uint32 interval, void *param) {
 }
 
 void CPU::Run() {
-	if( SDL_Init( SDL_INIT_TIMER ) < 0 ) { 
-		cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << endl;
-	}
 
 	this->timerID = SDL_AddTimer(16, ExecuteFrame, this);
 
@@ -336,7 +332,77 @@ BYTE CPU::getPixelColor(WORD paletteAddress, BYTE colorValue) {
 }
 
 bool CPU::CheckInput(){
-	this->quit = this->gpu.CheckInput();
+	bool keyPressed = false;
+	SDL_Event e;
+	while( SDL_PollEvent(&e) != 0) {
+		
+		if(e.type == SDL_QUIT) {
+			this->quit = true;
+		}
+
+		if(e.type == SDL_KEYDOWN) {
+			
+			switch (e.key.keysym.sym) {
+				case SDLK_RETURN: 	if(GetBit(this->memory.joypad, 7) == 1) {
+										keyPressed = true; 
+										this->memory.joypad &= (~BIT7);
+									}
+									break;
+				case SDLK_RSHIFT: 	if(GetBit(this->memory.joypad, 6) == 1) {
+										keyPressed = true; 
+										this->memory.joypad &= (~BIT6); 
+									}
+									break;
+				case SDLK_x: 		if(GetBit(this->memory.joypad, 5) == 1) {
+										keyPressed = true; 
+										this->memory.joypad &= (~BIT5); 
+									}
+									break;
+				case SDLK_z: 		if(GetBit(this->memory.joypad, 4) == 1) {
+										keyPressed = true; 
+										this->memory.joypad &= (~BIT4); 
+									}
+									break;
+				case SDLK_DOWN: 	if(GetBit(this->memory.joypad, 3) == 1) {
+										keyPressed = true; 
+										this->memory.joypad &= (~BIT3); 
+									}
+									break;
+				case SDLK_UP: 		if(GetBit(this->memory.joypad, 2) == 1) {
+										keyPressed = true; 
+										this->memory.joypad &= (~BIT2); 
+									}
+									break;
+				case SDLK_LEFT: 	if(GetBit(this->memory.joypad, 1) == 1) {
+										keyPressed = true; 
+										this->memory.joypad &= (~BIT1); 
+									}
+									break;
+				case SDLK_RIGHT: 	if(GetBit(this->memory.joypad, 0) == 1) {
+										keyPressed = true; 
+										this->memory.joypad &= (~BIT0); 
+									}
+									break;
+			}
+		}
+		else if (e.type == SDL_KEYUP) {
+
+			switch (e.key.keysym.sym) {
+				case SDLK_RETURN: 	this->memory.joypad |= BIT7; break;
+				case SDLK_RSHIFT: 	this->memory.joypad |= BIT6; break;
+				case SDLK_x: 		this->memory.joypad |= BIT5; break;
+				case SDLK_z: 		this->memory.joypad |= BIT4; break;
+				case SDLK_DOWN: 	this->memory.joypad |= BIT3; break;
+				case SDLK_UP: 		this->memory.joypad |= BIT2; break;
+				case SDLK_LEFT: 	this->memory.joypad |= BIT1; break;
+				case SDLK_RIGHT: 	this->memory.joypad |= BIT0; break;
+			}
+		}
+	}
+
+	if (keyPressed) {
+		requestInterrupt(Interrupt::Transition);
+	}
 }
 
 bool CPU::IsOn() {

@@ -11,9 +11,7 @@ class GPU {
 		GPU();
 		~GPU();
 		BYTE screen[160][144];
-		void UpdateScreen();
-		bool CheckInput();
-		
+		void UpdateScreen();		
 
 	private:
 		SDL_Window * window; 

@@ -43,6 +43,8 @@ Memory::Memory(){
 	this->RamBank = 0;
 	this->RamEnabled = false;
 	this->RomMode = true;
+
+	this->joypad = 0xFF;
 }
 
 BYTE Memory::readByte(WORD address) {
@@ -63,7 +65,23 @@ BYTE Memory::readByte(WORD address) {
 	}
 	else if (address == 0xFF00) {
 		retVal = this->Rom[address];
-		retVal |= 0x0F;
+
+		if ((retVal & BIT4) > 0 && (retVal & BIT5) > 0) {
+			retVal |= 0x0F;
+		}
+		else if ((retVal & BIT5) > 0) {
+			BYTE input = joypad;
+			input = 0x0F & input;
+			retVal = retVal | input;
+		}
+		else if ((retVal & BIT4) > 0) {
+			BYTE input = (joypad & 0xF0) >> 4;
+			retVal = retVal | input;
+		}
+		else {
+			retVal |= 0x0F;
+		}
+
 	}
 	else {
 		retVal = this->Rom[address];
@@ -102,6 +120,9 @@ void Memory::writeByte(WORD address, BYTE value) {
 	}
 	else if ((address >= 0xFEA0)  && (address < 0xFEFF)){
 		//Attempting to write to unwriteable memory
+	}
+	else if (address == 0xFF00) {
+		this->Rom[address] = value & 0xF0;
 	}
 	else if (address == 0xFF04) {
 		//Divider register resets when getting written to

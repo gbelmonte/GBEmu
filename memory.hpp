@@ -36,6 +36,8 @@ class Memory {
 
 		bool LoadCartridge(char* path);
 
+		BYTE joypad;
+
 	private:
 		BYTE Rom[200000];
 		BYTE Ram[200000];
