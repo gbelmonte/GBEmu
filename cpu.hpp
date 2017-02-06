@@ -57,6 +57,7 @@ class CPU{
 		
 		//Screen
 		void UpdateScreen(int cycles);
+		void UpdateLCDMode();
 		void DrawLine();
 		void DrawSprites();
 		BYTE getPixelColor(BYTE tileDataRow, BYTE tileDataRow2, int bitPosition, WORD paletteAddress);

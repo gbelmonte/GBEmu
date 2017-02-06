@@ -128,6 +128,10 @@ void Memory::writeByte(WORD address, BYTE value) {
 		//Divider register resets when getting written to
 		this->Rom[address] = 0;
 	}
+	else if (address == 0xFF44) {
+		//LY resets when written to
+		this->Rom[address] = 0;
+	}
 	else if (address == 0xFF46) {
 		WORD dmaAddress = value << 8;
 		for (int i = 0; i < 0xA0; i++) {
@@ -196,6 +200,10 @@ void Memory::changeBank(WORD address, BYTE value) {
 
 void Memory::incrementDividerRegister() {
 	this->Rom[0xFF04]++;
+}
+
+void Memory::updateLYRegister(BYTE value) {
+	this->Rom[0xFF44] = value;
 }
 
 bool Memory::LoadCartridge(char* path){

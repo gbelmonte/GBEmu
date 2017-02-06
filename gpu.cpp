@@ -23,7 +23,8 @@ GPU::GPU() {
 		
 		if( window == NULL) { 
 			cout << "Window could not be created! SDL_Error: " << SDL_GetError() << endl; 
-		}else { 
+		}
+		else { 
 			renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
 			//Fill the surface white 

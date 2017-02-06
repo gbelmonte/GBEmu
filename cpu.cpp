@@ -123,8 +123,11 @@ int CPU::DecodeExecute(BYTE opcode){
 void CPU::UpdateScreen(int cycles) {
 	//read lcd control register
 	BYTE lcdRegister = this->memory.readByte(0xFF40);
-	
-	if ((lcdRegister & BIT7) > 0) {
+	bool lcdOn = (lcdRegister & BIT7) > 0;
+
+	UpdateLCDMode();
+
+	if (lcdOn) {
 		cycleCounter -= cycles;
 		
 		if (cycleCounter <= 0) {
@@ -144,13 +147,78 @@ void CPU::UpdateScreen(int cycles) {
 
 			line++;
 			if (line > 153) {
-				this->memory.writeByte(0xFF44, 0);
+				this->memory.updateLYRegister(0);
 			}
 			else {
-				this->memory.writeByte(0xFF44, line);
+				this->memory.updateLYRegister(line);
 			}
 		}
 	}
+}
+
+void CPU::UpdateLCDMode() {
+	BYTE lcdRegister = this->memory.readByte(0xFF40);
+	BYTE lcdStatus = this->memory.readByte(0xFF41);
+	BYTE line = this->memory.readByte(0xFF44);
+
+	bool lcdOn = (lcdRegister & BIT7) > 0;
+
+	BYTE mode = 0x00;
+	if (!lcdOn) {
+		mode = 0x01;
+	}
+	else {
+
+		if (cycleCounter > 376) {
+			mode = 0x02;
+		}
+		else if (cycleCounter > 206) {
+			mode = 0x03;
+		}
+		else {
+			mode = 0x00;
+		}
+
+		if (line >= 144) {
+			mode = 0x01;
+		}
+	}
+
+	BYTE previousMode = lcdStatus & (BIT1 | BIT0);
+	if (previousMode != mode) {
+
+		bool interruptEnabled = false;
+		switch (mode) {
+			case 0x00: 	interruptEnabled = ((lcdStatus & BIT3) > 0);
+						break;
+			case 0x01:	interruptEnabled = ((lcdStatus & BIT4) > 0);
+						break;
+			case 0x02:	interruptEnabled = ((lcdStatus & BIT5) > 0);
+						break;
+			case 0x03:	interruptEnabled = false;
+						break;
+		}
+
+		if (interruptEnabled) {
+			requestInterrupt(Interrupt::LCDC);
+		}
+	}
+
+	BYTE LYCompareValue = this->memory.readByte(0xFF45);
+
+	BYTE coincidentFlag = 0x00;
+	if (LYCompareValue == line) {
+		BYTE previousCoincident = lcdStatus & BIT2;
+		bool interruptEnabled = (lcdStatus & BIT6) > 0;
+		if (/*previousCoincident == 0 && */interruptEnabled) {
+			requestInterrupt(Interrupt::LCDC);
+		}
+		coincidentFlag = BIT2;
+	}
+
+	lcdStatus &= ~(BIT2 | BIT1 | BIT0); 
+	lcdStatus |= (coincidentFlag | mode);
+	this->memory.writeByte(0xFF41, lcdStatus);
 }
 
 void CPU::DrawLine() {
@@ -162,7 +230,7 @@ void CPU::DrawLine() {
 
 	BYTE yPixel = this->memory.readByte(0xFF44);
 	BYTE yPixelRow = Scrolly + yPixel;
-	WORD yTileRow = (yPixelRow/8) * 32;
+	WORD yTileRow = ((BYTE)(yPixelRow/8)) * 32;
 	// BYTE yWindowPixelRow = yPixel - WindowYPos;
 	// BYTE yWindowTileRow = (yWindowPixelRow/8) * 32;
 
@@ -175,7 +243,7 @@ void CPU::DrawLine() {
 	for (int xPixel = 0; xPixel < 160; xPixel++) {
 
 		BYTE xPixelColumn = ScrollX + xPixel;
-		WORD xTileColumn = xPixelColumn/8;
+		WORD xTileColumn = ((BYTE)xPixelColumn)/8;
 		// BYTE xWindowPixelColumn = xPixel - WindowXPos;
 		// WORD xWindowTileColumn = xWindowPixelColumn/8;
 
@@ -204,7 +272,7 @@ void CPU::DrawLine() {
 
 		row = row * 2; //each pixel row is represented by 2 bytes
 
-		SIGNED_WORD tileAddress = 0;
+		WORD tileAddress = 0;
 		if ((lcdRegister & BIT4) > 0) {
 			tileAddress = 0x8000 + (tileNumber*16) + row;
 		}
@@ -855,7 +923,7 @@ BYTE CPU::RegDec(BYTE value) {
 
 void CPU::TestBit(BYTE byte, BYTE mask) {
 	byte = byte & mask;
-//	cout << hex << (int)byte << endl;
+
 	if (byte != 0) {
 		resetFlag(Flag::z);
 	}

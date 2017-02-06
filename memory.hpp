@@ -33,6 +33,7 @@ class Memory {
 		void writeByte(WORD address, BYTE value);
 		
 		void incrementDividerRegister();
+		void updateLYRegister(BYTE value);
 
 		bool LoadCartridge(char* path);
 
