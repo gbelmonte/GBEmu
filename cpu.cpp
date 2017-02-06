@@ -166,6 +166,7 @@ void CPU::UpdateLCDMode() {
 	BYTE mode = 0x00;
 	if (!lcdOn) {
 		mode = 0x01;
+		this->memory.updateLYRegister(0);
 	}
 	else {
 
@@ -210,7 +211,7 @@ void CPU::UpdateLCDMode() {
 	if (LYCompareValue == line) {
 		BYTE previousCoincident = lcdStatus & BIT2;
 		bool interruptEnabled = (lcdStatus & BIT6) > 0;
-		if (/*previousCoincident == 0 && */interruptEnabled) {
+		if (previousCoincident == 0 && interruptEnabled) {
 			requestInterrupt(Interrupt::LCDC);
 		}
 		coincidentFlag = BIT2;
@@ -335,7 +336,7 @@ void CPU::DrawSprites() {
 					BYTE tileDataRow = this->memory.readByte(tileDataAddress);
 					BYTE tileDataRow2 = this->memory.readByte(tileDataAddress + 1);
 					for (int x = xPosition; x < (xPosition + 8); x++) {
-						if (x >= 0 && x <= 160) {
+						if (x >= 0 && x < 160) {
 							int pixelXBit = x - xPosition;
 							if (xFlip > 0) {
 								pixelXBit = 7 - pixelXBit;
