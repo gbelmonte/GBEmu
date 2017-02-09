@@ -1,3 +1,6 @@
+#ifndef MEMORY_HPP
+#define MEMORY_HPP
+
 #include "common.hpp"
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,6 +37,7 @@ class Memory {
 		
 		void incrementDividerRegister();
 		void updateLYRegister(BYTE value);
+		void requestInterrupt(Interrupt interrupt);
 
 		bool LoadCartridge(char* path);
 
@@ -52,3 +56,5 @@ class Memory {
 
 		void changeBank(WORD address, BYTE value);
 };
+
+#endif

@@ -206,6 +206,12 @@ void Memory::updateLYRegister(BYTE value) {
 	this->Rom[0xFF44] = value;
 }
 
+void Memory::requestInterrupt(Interrupt interrupt) {
+	BYTE interruptFlag = this->Rom[0xFF0F];
+	interruptFlag |= (BYTE)interrupt;
+	this->Rom[0xFF0F] = interruptFlag;
+}
+
 bool Memory::LoadCartridge(char* path){
 	size_t result;
 	cout << path << endl;

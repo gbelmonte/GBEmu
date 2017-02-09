@@ -27,11 +27,10 @@ class CPU{
 		Register SP;
 		Register PC;
 
-		Memory memory;
-		GPU gpu;
+		Memory memory = Memory();
+		GPU gpu = GPU(&memory);
 
 		int cyclesThisFrame;
-		int cycleCounter;
 		int dividerCounter;
 		int timerCounter;
 		int timerFrequency;
@@ -54,14 +53,6 @@ class CPU{
 		bool IsOn();
 		bool CheckInput();
 		void UpdateCPUCycles(int cycles);
-		
-		//Screen
-		void UpdateScreen(int cycles);
-		void UpdateLCDMode();
-		void DrawLine();
-		void DrawSprites();
-		BYTE getPixelColor(BYTE tileDataRow, BYTE tileDataRow2, int bitPosition, WORD paletteAddress);
-		BYTE getPixelColor(WORD paletteAddress, BYTE colorValue);
 
 		//Timer
 		void UpdateTimers(int cycles);
