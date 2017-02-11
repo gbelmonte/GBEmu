@@ -6,6 +6,7 @@
 #include "memory.hpp"
 #include "gpu.hpp"
 #include "logger.hpp"
+#include "util.hpp"
 
 using namespace std;
 
@@ -372,7 +373,6 @@ class CPU{
 		int DEC_SP();
 
 		//Bit
-		BYTE GetBit(BYTE value, int bitPos);
 		void TestBit(BYTE byte, BYTE mask);
 
 		int BIT_0_A();

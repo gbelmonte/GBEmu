@@ -225,6 +225,39 @@ void CPU::UpdateTimers(int cycles) {
 	}
 }
 
+void CPU::updateDividerTimer(int cycles) {
+	dividerCounter += cycles;
+	if (dividerCounter >= 255) {
+		this->memory.incrementDividerRegister();
+		dividerCounter = 0;
+	}
+}
+
+void CPU::updateTimerFrequency() {
+	BYTE frequency = this->memory.readByte(0xFF07);
+	BYTE frequencyMask = (BIT1 | BIT0);
+	frequency = frequency & frequencyMask;
+
+	int newFrequency = timerFrequency;
+	switch(frequency) {
+		case 0: newFrequency = 1024; break;
+		case 1:	newFrequency = 16; break;
+		case 2:	newFrequency = 64; break;
+		case 3:	newFrequency = 256; break;
+	}
+
+	if (newFrequency != timerFrequency) {
+		timerFrequency = newFrequency;
+		this->timerCounter = 0;
+	}
+}
+
+void CPU::UpdateCPUCycles(int cycles) {
+	this->gpu.UpdateScreen(cycles);
+	this->UpdateTimers(cycles);
+	this->cyclesThisFrame += cycles;
+}
+
 void CPU::HandleInterrupt() {
 	BYTE interruptFlag = this->memory.readByte(0xFF0F);
 	BYTE iEnabled = this->memory.readByte(0xFFFF);
@@ -264,40 +297,6 @@ void CPU::HandleInterrupt() {
 		}
 	}
 }
-
-void CPU::updateDividerTimer(int cycles) {
-	dividerCounter += cycles;
-	if (dividerCounter >= 255) {
-		this->memory.incrementDividerRegister();
-		dividerCounter = 0;
-	}
-}
-
-void CPU::updateTimerFrequency() {
-	BYTE frequency = this->memory.readByte(0xFF07);
-	BYTE frequencyMask = (BIT1 | BIT0);
-	frequency = frequency & frequencyMask;
-
-	int newFrequency = timerFrequency;
-	switch(frequency) {
-		case 0: newFrequency = 1024; break;
-		case 1:	newFrequency = 16; break;
-		case 2:	newFrequency = 64; break;
-		case 3:	newFrequency = 256; break;
-	}
-
-	if (newFrequency != timerFrequency) {
-		timerFrequency = newFrequency;
-		this->timerCounter = 0;
-	}
-}
-
-void CPU::UpdateCPUCycles(int cycles) {
-	this->gpu.UpdateScreen(cycles);
-	this->UpdateTimers(cycles);
-	this->cyclesThisFrame += cycles;
-}
-
 
 Interrupt CPU::getInterrupt(BYTE interruptFlag, BYTE enabled) {
 	Interrupt retVal = Interrupt::None;
@@ -647,26 +646,6 @@ void CPU::TestBit(BYTE byte, BYTE mask) {
 
 	resetFlag(Flag::n);
 	setFlag(Flag::h);
-}
-
-BYTE CPU::GetBit(BYTE value, int bitPos) {
-	
-	BYTE mask;
-	switch (bitPos) {
-		case 0: mask = BIT0; break;
-		case 1: mask = BIT1; break; 
-		case 2: mask = BIT2; break;
-		case 3: mask = BIT3; break;
-		case 4: mask = BIT4; break;
-		case 5: mask = BIT5; break;
-		case 6: mask = BIT6; break;
-		case 7: mask = BIT7; break;
-	}
-
-	value = value & mask;
-	value = value >> bitPos;
-
-	return value;
 }
 
 BYTE CPU::SetBit(BYTE byte, BYTE bitMask, BYTE value) {
